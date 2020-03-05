@@ -1,84 +1,116 @@
-# Install MLRun locally
- 
-## Run Using Local Docker
+# Install MLRun Locally
 
-To use MLRun on your local docker run the API service, the UI, 
-and the Examples Jupyter server using the following script. 
-You must provide a valid path for the shared data dir and the host local IP.
+This guide outlines the steps for installing MLRun locally.
 
-Using docker is limited to local runtimes
+#### In This Document
 
-Once its running open Jupyter (in port 8888) and run the `mlrun_basics` notebook in `/examples`.
-and open the UI (in port 4000).
+- [Run MLRun on a Local Docker Registry](#local-docker)
+- [Install an Run MLRun on a Kubernetes Cluster](#k8s-cluster)
+  - [Install Shared Volume Storage (an NFS Server Provisioner)](#k8s-install-a-shared-volume-storage)
+  - [Install the MLRun API and Dashboard (UI) Services](#k8s-install-mlrun-api-n-ui-services)
+  - [Install a Jupyter Server with a Preloaded MLRun Package](#k8s-install-jupyter-service-w-mlrun)
+  - [Start Working](#k8s-install-start-working)
 
- 
+<a id="local-docker"></a>
+## Run MLRun on a Local Docker Registry
+
+To use MLRun with your local Docker registry, run the MLRun API service, dashboard, and example Jupyter server by using the following script.
+
+> **Note:**
+> - You must provide valid paths for the shared data directory and the local host IP.
+> - Using Docker is limited to local runtimes.
+
 ```
 SHARED_DIR=/home/me/data
 LOCAL_IP=x.x.x.x
-# on windows use host.docker.internal for LOCAL_IP
+# On Windows, use host.docker.internal for LOCAL_IP
 
 docker pull quay.io/iguazio/mlrun-ui:latest
 docker pull mlrun/mlrun-api:latest
 docker pull mlrun/jupy:latest
 
-
 docker run -it -p 8080:8080 --rm -d --name mlrun-api -v $(SHARED_DIR}:/home/jovyan/data -e MLRUN_HTTPDB_DATA_VOLUME=/home/jovyan/data mlrun/mlrun-api:0.4.5
 docker run -it -p 4000:80 --rm -d --name mlrun-ui -e MLRUN_API_PROXY_URL=http://${LOCAL_IP}:8080 quay.io/iguazio/mlrun-ui:latest
 docker run -it -p 8888:8888 --rm -d --name jupy -v $(SHARED_DIR}:/home/jovyan/data -e MLRUN_DBPATH=http://${LOCAL_IP}:8080 -e MLRUN_ARTIFACT_PATH=/home/jovyan/data mlrun/jupy:latest
-
-``` 
- <br>
- 
-## Install on a Kubernetes cluster
-
-The following install will allow you to use local, job, and dask runtimes. 
-for Mpijob (Horovod) and Spark ypo need to install the additional custom resources (CRDs). 
-
-### Install Shared Volume Storage (NFS Server Provisioner)
-
-You can use any shared file system (or object storage with some limitations) for sharing artifacts and/or code across containers.
-Here we will use a shared NFS server and use a helm chart to install it.
-
-Type the following commands (assuming you have installed Helm):
-
-```
-helm repo add stable https://kubernetes-charts.storage.googleapis.com/
-helm install stable/nfs-server-provisioner --name nfsprov
 ```
 
-<b> Create a PVC for a shared NFS volume</b>
+When the execution completes &mdash;
 
-copy the [nfs-pvc.yaml](nfs-pvc.yaml) file to you cluster and type:
+- Open Jupyter Notebook on port 8888 and run the code in the **examples/mlrun_basics.ipynb** notebook.
+- Use the MLRun dashboard on port 4000.
 
+<a id="k8s-cluster"></a>
+## Install MLRun on a Kubernetes Cluster
+
+Perform the following steps to install and run MLRun on a Kubernetes cluster:
+
+- [Install shared volume storage (an NFS server provisioner)](#k8s-install-a-shared-volume-storage)
+- [Install the MLRun API and dashboard (UI) services](#k8s-install-mlrun-api-n-ui-services)
+
+> **Note:** The outlined procedure allows using the local, job, and Dask runtimes.
+> To use the MPIJob (Horovod) or Spark runtimes, you need to install additional custom resource definitions (CRDs).
+
+<a id="k8s-install-a-shared-volume-storage"></a>
+### Install Shared Volume Storage (an NFS Server Provisioner)
+
+You can use any shared file system (or object storage, with some limitations) for sharing artifacts and/or code across containers.
+The following example uses a shared NFS server and a Helm chart for the installation:
+
+1. Run the following commands (provided Helm is installed):
+    ```sh
+    helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+    helm install stable/nfs-server-provisioner --name nfsprov
+    ```
+2. Create a PVC for a shared NFS volume: copy the [**nfs-pvc.yaml**](nfs-pvc.yaml) file to you cluster and run the following command:
+    ```sh
     kubectl apply -n <namespace> -f nfs-pvc.yaml
-    
-> Note: the `/home/jovyan/data` path is used by both Jupyter and MLRun service to reference the data.
-    
+    ```
 
-### Install MLRun API & UI Services
+> **Note:**
+> - Both the Jupyter and MLRun services use the path **/home/jovyan/data** to reference the data.
+> - Replace the `<namespace>` placeholder in all the commands with the name of your Kubernetes namespace.
+<!-- SLSL: NOWNOW I added this note. -->
+<!-- SLSL: NOWNOW Is this note specific to this section? It mentions the MLRun
+  and Jupyter service, but we provide installation instructions for the MLRun
+  API and Jupyter only in the next sections? Perhaps it was meant as a note to
+  preface these two sections, but if so this isn't clear because it's taken to
+  be part of the NFS section. -->
 
-If you plan on pushing containers or use a private registry you need to first create a secret with your Docker registry information.
+<a id="k8s-install-mlrun-api-n-ui-services"></a>
+### Install the MLRun API and Dashboard (UI) Services
 
-`kubectl create -n <namespace> secret docker-registry my-docker --docker-server=https://index.docker.io/v1/ --docker-username=<your-user> --docker-password=<your-password> --docker-email=<your-email>`
+If you plan to push containers or use a private registry, you need to first create a secret with your Docker registry information.
+You can do this by running the following command:
+```sh
+kubectl create -n <namespace> secret docker-registry my-docker --docker-server=https://index.docker.io/v1/ --docker-username=<your-user> --docker-password=<your-password> --docker-email=<your-email>
+```
 
-copy and edit the [mlrun-local.yaml](mlrun-local.yaml), file as needed and type:
+Copy the [**mlrun-local.yaml**](mlrun-local.yaml) file to your cluster, edit it as needed, and run the following command from the directory that contains the file:
+```sh
+kubectl apply -n <namespace> -f mlrun-local.yaml
+```
 
-    kubectl apply -n <namespace> -f mlrun-local.yaml
+<a id="k8s-install-jupyter-service-w-mlrun"></a>
+### Install a Jupyter Server with a Preloaded MLRun Package
 
+Copy the [**mljupy.yaml**](mljupy.yaml) file to you cluster and run the following command from the directory that contains the file:
+```sh
+kubectl apply -n <namespace> -f mljupy.yaml
+```
 
-### Install a Jupyter Server (with pre-loaded MLRun)
+To change or add packages, see the Jupyter Dockerfile ([**Dockerfile.jupy**](Dockerfile.jupy)).
 
-copy the [mljupy.yaml](mljupy.yaml) file to you cluster and type:
+<a id="k8s-install-start-working"></a>
+### Start Working
 
-    kubectl apply -n <namespace> -f mljupy.yaml
-    
-See the Jupyter [Dockerfile](Dockerfile.jupy) if you need to change or add packages.
+- Open Jupyter Notebook on NodePort `30040` and run the code in the **examples/mlrun_basics.ipynb** notebook.
+- Use the dashboard at NodePort `30068`.
 
-### Start working
+You can change the ports by editing the YAML files.
+You can use `ingress` for better security.
+<!-- SLSL: NOWNOW
+- Is the ingress comment related to the ports comment and should `ingress`
+  indeed be formatted with inline code?
+- Can they also edit the ports for the local Docker installation?
+-->
 
-login to the Jupyter notebook at Node port `30040` and run the examples 
-
-Use the UI at Nodeport `30068` 
-
-The ports can be changes by editing the yaml files, you can use `ingress` for better security.
-    
