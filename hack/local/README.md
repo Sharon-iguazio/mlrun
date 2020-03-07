@@ -69,12 +69,6 @@ The following example uses a shared NFS server and a Helm chart for the installa
 > **Note:**
 > - Both the Jupyter and MLRun services use the path **/home/jovyan/data** to reference the data.
 > - Replace the `<namespace>` placeholder in all the commands with the name of your Kubernetes namespace.
-<!-- SLSL: NOWNOW I added this note. -->
-<!-- SLSL: NOWNOW Is this note specific to this section? It mentions the MLRun
-  and Jupyter service, but we provide installation instructions for the MLRun
-  API and Jupyter only in the next sections? Perhaps it was meant as a note to
-  preface these two sections, but if so this isn't clear because it's taken to
-  be part of the NFS section. -->
 
 <a id="k8s-install-mlrun-api-n-ui-services"></a>
 ### Install the MLRun API and Dashboard (UI) Services
@@ -108,9 +102,4 @@ To change or add packages, see the Jupyter Dockerfile ([**Dockerfile.jupy**](Doc
 
 You can change the ports by editing the YAML files.
 You can use `ingress` for better security.
-<!-- SLSL: NOWNOW
-- Is the ingress comment related to the ports comment and should `ingress`
-  indeed be formatted with inline code?
-- Can they also edit the ports for the local Docker installation?
--->
 
