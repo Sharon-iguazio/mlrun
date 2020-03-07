@@ -42,22 +42,25 @@ from .config import config as mlconf
 def run_pipeline(pipeline, arguments=None, experiment=None, run=None,
                  namespace=None, artifact_path=None, ops=None,
                  url=None, remote=False):
-    """remote KubeFlow pipeline execution
+    """Run an ML pipeline using Kubeflow Pipelines (KFP)
 
-    Submit a workflow task to KFP via mlrun API service
+    Submit a workflow task to KFP using the MLRun API service.
 
-    :param pipeline   KFP pipeline function or path to .yaml/.zip pipeline file
-    :param arguments  pipeline arguments
-    :param experiment experiment name
-    :param run        optional, run name
-    :param namespace  Kubernetes namespace (if not using default)
-    :param url        optional, url to mlrun API service
-    :param artifact_path  target location/url for mlrun artifacts
-    :param ops        additional operators (.apply() to all pipeline functions)
-    :param remote     use mlrun remote API service vs direct KFP APIs
+    :param pipeline   KFP pipeline function or path to a YAML/ZIP pipeline file
+    :param arguments  Pipeline arguments
+    :param experiment Experiment name
+    :param run        [Optional] Run name
+    :param namespace  [Optional] Kubernetes namespace; None (default) to use
+                       default namespace
+    :param url        [Optional] URL of an MLRun API service
+    :param artifact_path A local path or URL for storing pipeline artifacts
+    :param ops        [Optional] Operators to apply to all pipeline functions
+    :param remote     [Optional] True - use the MLRun remote API service;
+                      False (default) - use the KFP API directly
 
-    :return kubeflow pipeline id
+    :return Kubeflow pipeline ID
     """
+    # SLSL: I marked additional params as optional.
 
     namespace = namespace or mlconf.namespace
     arguments = arguments or {}
@@ -83,7 +86,7 @@ def run_pipeline(pipeline, arguments=None, experiment=None, run=None,
                 experiment_name=experiment, pipeline_conf=conf)
 
         id = run_result.run_id
-    logger.info('Pipeline run id={}, check UI or DB for progress'.format(id))
+    logger.info('Pipeline run id={}, check the MLRun dashboard or DB for progress'.format(id))
     return id
 
 
@@ -182,46 +185,49 @@ def get_or_create_ctx(name: str,
                       spec=None,
                       with_env: bool = True,
                       rundb: str = ''):
-    """ called from within the user program to obtain a run context
+    """ Called from within the user program to obtain a run context
 
-    the run context is an interface for receiving parameters, data and logging
-    run results, the run context is read from the event, spec, or environment
-    (in that order), user can also work without a context (local defaults mode)
+    The run context is an interface for receiving parameters and data and
+    logging run results. The context is read from the event, spec, or
+    environment (in this order). You can also work without a context using the
+    default local mode.
 
-    all results are automatically stored in the "rundb" or artifact store,
-    the path to the rundb can be specified in the call or obtained from env.
+    All results are automatically stored in the MLRun database.
+    The path to the DB can be specified in the `rundb` method parameter or in
+    an environment variable.
 
-    :param name:     run name (will be overridden by context)
-    :param event:    function (nuclio Event object)
-    :param spec:     dictionary holding run spec
-    :param with_env: look for context in environment vars, default True
-    :param rundb:    path/url to the metadata and artifact database
+    :param name:     Run name; overridden by context
+    :param event:    Nuclio event object that represents an MLRun function
+    :param spec:     Dictionary containing the run specification
+    :param with_env: True (default) - look for context in environment variables
+    :param rundb:    Path or URL of the MLRun database
 
-    :return: execution context
+    :return: Execution context
 
     Example:
 
-    # load MLRUN runtime context (will be set by the runtime framework e.g. KubeFlow)
-    context = get_or_create_ctx('train')
+    # Load the MLRun runtime context; the context is set by the runtime
+    # framework - for example, Kubeflow
 
-    # get parameters from the runtime context (or use defaults)
+    # Get parameters from the runtime context (or use defaults)
     p1 = context.get_param('p1', 1)
     p2 = context.get_param('p2', 'a-string')
 
-    # access input metadata, values, files, and secrets (passwords)
+    # Access input metadata, values, files, and secrets (passwords)
     print(f'Run: {context.name} (uid={context.uid})')
     print(f'Params: p1={p1}, p2={p2}')
     print('accesskey = {}'.format(context.get_secret('ACCESS_KEY')))
     print('file: {}'.format(context.get_input('infile.txt').get()))
 
-    # RUN some useful code e.g. ML training, data prep, etc.
+    # Run some useful code - for example, ML training or data preparation
 
-    # log scalar result values (job result metrics)
+    # Log scalar result values (job result metrics)
     context.log_result('accuracy', p1 * 2)
     context.log_result('loss', p1 * 3)
     context.set_label('framework', 'sklearn')
 
-    # log various types of artifacts (file, web page, table), will be versioned and visible in the UI
+    # Log various types of artifacts (file, web page, table), which will be
+    # versioned and visible in the UI
     context.log_artifact('model.txt', body=b'abc is 123', labels={'framework': 'xgboost'})
     context.log_artifact('results.html', body=b'<b> Some HTML <b>', viewer='web-app')
 
@@ -267,17 +273,20 @@ def get_or_create_ctx(name: str,
 
 
 def import_function(url='', secrets=None, db=''):
-    """create function object from DB or local/remote YAML file
+    """Import a function
+    
+    Create a function object from a DB or from a YAML file that's read from
+    a local file or from a remote URL (such as HTTP(S), S3, Git, or the
+    Iguazio Data Science Platform)
 
-    reading from a file or remote URL (http(s), s3, git, v3io, ..)
-    :param url:      path/url to function YAML file
-                     or
-                     db://{project}/{name}[:tag] when reading from mlrun db
+    :param url:      Local path or URL of a function-spec YAML file;
+                     "db://<project>/<name>[:<tag>]" to read from the MLRun DB
 
-    :param secrets:  optional, credentials dict for DB or URL (s3, v3io, ..)
-    :param db        optional, mlrun api/db path
+    :param secrets:  [Optional] Credentials dictionary for accessing the import
+                     DB or URL (S3, Iguazio Data Science Platform, etc.)
+    :param db        [Optional] Path or URL of the MLRun database
 
-    :return: function object
+    :return: A function object
     """
     if url.startswith('db://'):
         url = url[5:]
@@ -295,7 +304,10 @@ def import_function(url='', secrets=None, db=''):
 
 
 def import_function_to_dict(url, secrets=None):
-    """Load function spec from local/remote YAML file"""
+    """Load a function specification from a local or a remote YAML file"""
+    # SLSL: I added the parameter descriptions. Is it only intended as an
+    # internal file for use from import_function()?
+
     obj = get_object(url, secrets)
     runtime = yaml.load(obj, Loader=yaml.FullLoader)
     remote = '://' in url
@@ -342,28 +354,31 @@ def new_function(name: str = '', project: str = '', tag: str = '',
                  mode=None, kfp=None):
     """Create a new ML function from base properties
 
-    e.g.:
-           # define a container based function
+    For example:
+           # Define a container-based function
            f = new_function(command='job://training.py -v', image='myrepo/image:latest')
 
-           # define a handler function (execute a local function handler)
+           # Define a handler function (execute a local function handler)
            f = new_function().run(task, handler=myfunction)
 
-    :param name:     function name
-    :param project:  function project (none for 'default')
-    :param tag:      function version tag (none for 'latest')
+    :param name:     Function name
+    :param project:  Function project; None to use the default project name
+    :param tag:      Function version tag; None for 'latest'
 
-    :param kind:     runtime type (local, job, nuclio, spark, mpijob, dask, ..)
-    :param command:  command/url + args (e.g.: training.py --verbose)
-    :param image:    container image (start with '.' for default registry)
-    :param args:     command line arguments (override the ones in command)
-    :param runtime:  runtime (job, nuclio, spark, dask ..) object/dict
+    :param kind:     Runtime type (local, job, nuclio, spark, mpijob, dask, ..)
+    :param command:  Command/url + args (e.g.: training.py --verbose)
+    :param image:    Container image (start with '.' for default registry)
+    :param args:     Command line arguments (override the ones in command)
+    :param runtime:  Runtime (job, Nuclio, Spark, Dask, etc.) object/dictionary
                      store runtime specific details and preferences
-    :param mode:     runtime mode, e.g. noctx, pass to bypass mlrun
-    :param kfp:      reserved, flag indicating running within kubeflow pipeline
+    :param mode:     Runtime mode (for example, "noctx"; set to bypass MLRun
+    :param kfp:      RESERVED A flag indicating execution in Kubeflow Pipelines
 
     :return: function object
     """
+    # SLSL:
+    # - If kfp is a flag, as described, shouldn't the default be False?
+
     kind, runtime = process_runtime(command, runtime, kind)
     command = get_in(runtime, 'spec.command', command)
     name = name or get_in(runtime, 'metadata.name', '')
@@ -439,23 +454,26 @@ def code_to_function(name: str = '', project: str = '', tag: str = '',
                      filename: str = '', handler='', runtime='', kind='',
                      image=None, code_output='', embed_code=True,
                      with_doc=False):
-    """convert code or notebook to function object with embedded code
-    code stored in the function spec and can be refreshed using .with_code()
-    eliminate the need to build container images every time we edit the code
+    """Convert code or a web notebook to a function object with embedded code
 
-    :param name:       function name
-    :param project:    function project (none for 'default')
-    :param tag:        function tag (none for 'latest')
-    :param filename:   blank for current notebook, or path to .py/.ipynb file
-    :param handler:    name of function handler (if not main)
-    :param runtime:    optional, runtime type local, job, dask, mpijob, ..
-    :param kind:       optional, runtime type local, job, dask, mpijob, ..
-    :param image:      optional, container image
-    :param code_output: save the generated code (from notebook) in that path
-    :param embed_code: embed the source code into the function spec
+    Code stored in the function spec and can be refreshed using `.with_code()`,
+    eliminating the need to rebuild container images for each code edit.
+
+    :param name:       Function name
+    :param project:    Function project (none for 'default')
+    :param tag:        Function tag (none for 'latest')
+    :param filename:   Path to a PY or IPYNB file, or an empty string (default)
+                       to use the current notebook
+    :param handler:    Name of the function handler; default: `main`
+    :param runtime:    [Optional] Runtime type local, job, dask, mpijob, ..
+    :param kind:       [Optional] Runtime type local, job, dask, mpijob, ..
+    :param image:      [Optional] Container image
+    :param code_output: Path for saving the code generated from the notebook
+    :param embed_code: True (default) to embed the source code within the
+                       function spec; False otheriwse
 
     :return:
-           function object
+           Function object
     """
     filebase, _ = path.splitext(path.basename(filename))
     if runtime:
@@ -590,3 +608,4 @@ def py_eval(data):
         return value
     except (SyntaxError, ValueError):
         return data
+

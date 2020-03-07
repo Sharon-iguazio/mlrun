@@ -4,42 +4,64 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PyPI version fury.io](https://badge.fury.io/py/mlrun.svg)](https://pypi.python.org/pypi/mlrun/)
 [![Documentation](https://readthedocs.org/projects/mlrun/badge/?version=latest)](https://mlrun.readthedocs.io/en/latest/?badge=latest)
+<!-- SLSL TODO: Split into multiple pages in a separate commit. -->
 
-A generic an easy to use mechanism for data scientists and developers/engineers to describe and run machine learning related tasks in various scalable runtime environments and ML pipelines while automatically tracking code, metadata, inputs, and outputs of executions.
-MLRun integrate/use [Nuclio serverless project](https://github.com/nuclio/nuclio) and [KubeFlow](https://www.kubeflow.org/).
+MLRun is a generic and convenient mechanism for data scientists and software developers to describe and run tasks related to machine learning (ML) in various scalable runtime environments and ML pipelines while automatically tracking executed code, metadata, inputs, and outputs of.
+MLRun integrates with the [Nuclio](https://nuclio.io/) serverless project and with [Kubeflow Pipelines](https://github.com/kubeflow/pipelines).
 
+#### In This Document
+- [General Concept and Motivation](#concepts-n-motvation)
+- [Architecture and Quick-Start Tutorial](#arch-n-qs-tutorial)
+  - [Managed and Portable Execution ](#managed-and-portable-execution)
+  - [Using Hyperparameters for Job Scaling](#using-hyperparameters-for-job-scaling)
+  - [Automated Parameterization, Artifact Tracking, and Logging](#auto-parameterization-artifact-tracking-n-logging)
+  - [Automated Code Deployment and Containerization](#auto-code-deployment-n-containerization)
+  - [Running an MLRun ML Pipeline with Kubeflow Pipelines](#run-mlrun-ml-pipeline-w-kubeflow-pipelines)
+  - [Viewing the Run Results](#view-run-results)
+- [The MLRun Dashboard](#mlrun-ui)
+- [Additional Information and Examples](#additional-info-n-examples)
+  - [Replacing Runtime Context Parameters from the CLI](#replace-runtime-context-param-from-cli)
+  - [Using Remote Function Code](#using-remote-function-code)
+- [Running the MLRun Database/API Service](#run-mlrun-db-service)
+
+<a id="concepts-n-motvation"></a>
 ## General Concept and Motivation
+## [Installation](#installation)
 
-A developer or data-scientist writes code in a local IDE or notebook, then he would like to run the same code on a larger cluster using scale-out containers or functions, once the code is ready he or another developer need to transfer the code into an automated ML workflow (e.g. using [KubeFlow Pipelines](https://www.kubeflow.org/docs/pipelines/pipelines-quickstart/)), add logging, monitoring, security, etc.
+A developer or data-scientist writes code in a local IDE or notebook, then he would like to run the same code on a larger cluster using scale-out containers or functions, once the code is ready he or another developer need to transfer the code into an automated ML workflow (for example, using [Kubeflow Pipelines](https://www.kubeflow.org/docs/pipelines/pipelines-quickstart/)), add logging, monitoring, security, etc.
 
-In the various (`runtime`) environments we use different configurations, parameters, and data sources.
-We also use different frameworks and platforms which focus on different stages in the life-cycle.
-This leads to constant development and DevOps/MLops work.
+The various environments ("runtimes") use different configurations, parameters, and data sources.
+In addition, different frameworks and platforms are used to focus on different stages in the life cycle.
+This leads to constant development and DevOps/MLOps work.
 
-As we scale we need greater computation power or GPUs, and we need to access large scale datasets, this cant work on laptops, we need a way to seamlessly run our code on a remote cluster and automatically scale it out.
+As your project scales, you need greater computation power or GPUs, and you need to access large-scale data sets, this cant work on laptops, you need a way to seamlessly run your code on a remote cluster and automatically scale it out.
 
-When running experiments we would like to record/version all the code, configuration, outputs and and associated inputs (lineage), so we can easily reproduce or explain our results. The fact that we use different forms of storage (files, S3, ..) and databases doesnt make our life easy.
+When running experiments, you should ideally be able to record/version all the code, configuration, outputs, and associated inputs (lineage), so you can easily reproduce or explain your results.
+The fact that you use different forms of storage (files, S3, etc.) and databases doesn't make it easy.
 
-Many of those code and ML functions can be reused across projects and companies, having a function marketplace comprised of highly tuned open-source templates along side our internally developed functions can further accelerate our work.
+Many of those code and ML functions can be reused across projects and companies.
+Having a function marketplace that comprises highly tuned open-source templates alongside your internally developed functions can further accelerate your work.
 
-Wouldnt it be great if we could write the code once in simple `local` semantics and we can run it as is on various platforms.
-imagine a layer automate the build process, execution, data movement, scaling, versioning, parametrization, outputs tracking, etc.
-a world of easily developed, published or consumed data/ML `Functions` which can be used to form complex and large scale ML pipelines.
+Wouldn't it be great if you could write the code once, using simple "local" semantics, and then run it as-is on various platforms?
+Imagine a layer that automates the build process, execution, data movement, scaling, versioning, parameterization, outputs tracking, etc.
+A world of easily developed, published or consumed data/ML "functions" that can be used to form complex and large scale ML pipelines.
 
-<b>This is the goal for this package!</b>
+<b>This is the goal of this package!</b>
 
-The code is in early development stages and provided as a reference, we would like to foster wide industry collaboration and the idea is to make all the resources pluggable, this way developers code to one API and can use various open source projects or commercial products.
+The code is in early development stages and provided as a reference.
+The hope is to foster wide industry collaboration and make all the resources pluggable, so that developers can code to one API and use various open-source projects or commercial products.
 
-## Content
-#### Installation
+<a id="installation"></a>
+## Installation
 
-run `pip install mlrun` to get the library and CLI
+Run `pip install mlrun` to get the library and CLI.
 
-MLRun require two containers (API and UI), you can also use the pre-baked Jupyter lab image.
+MLRun requires two containers (for the API and the dashboard), you can also use the pre-baked Jupyter lab image.
 
-for running MLRun using Docker or Kubernetes [see the instructions page](hack/local/README.md)
+To run MLRun using Docker or Kubernetes, see the related [instructions page](hack/local/README.md).
 
-for installation on Iguazio clusters use [this yaml](hack/mlrun-all.yaml) and remember to set the access-key and default registry url, e.g.:
+For installation on Iguazio Data Science Platform clusters, use [this YAML file](hack/mlrun-all.yaml); remember to set the access-key and default registry URL for your cluster.
+For example:
 
 ```
 curl -O https://raw.githubusercontent.com/mlrun/mlrun/master/hack/mlrun-all.yaml
@@ -50,89 +72,93 @@ curl -O https://raw.githubusercontent.com/mlrun/mlrun/master/hack/mlrun-all.yaml
 kubectl apply -n <namespace> -f <updated-yaml-file>
 ```
 
-#### Architecture and tutorial
-
-* [Managed and portable execution a.k.a Serverless](#managed-and-portable-execution)
-* [Automated parametrization, artifact tracking and logging](#automated-parametrization-artifact-tracking-and-logging)
-* [Using hyper parameters for job scaling](#using-hyper-parameters-for-job-scaling)
-* [Automated code deployment and containerization](#automated-code-deployment-and-containerization)
-* [Build and run function from a remote IDE using the CLI](examples/remote.md)
-* [Running with KubeFlow ML Pipeline](#running-with-kubeflow-ml-pipeline)
-* [MLRun UI](#mlrun-user-interface)
-* [Run and Artifact Database](#run-and-artifact-database)
-
-#### Examples & Notebooks
-* [Learn MLRun basics](examples/mlrun_basics.ipynb)
-* [From local runs to Kubernetes jobs, and automated pipelines in a single Notebook](examples/mlrun_jobs.ipynb)
-* [Create an end to end XGBoost pipeline: ingest, train, verify, deploy](https://github.com/mlrun/demo-xgb-project)
-* Examples for MLRun with scale-out runtimes
+#### Examples and Notebooks
+- [Learn MLRun basics](examples/mlrun_basics.ipynb)
+- [From local runs to Kubernetes jobs, and automated pipelines in a single Notebook](examples/mlrun_jobs.ipynb)
+- [Create an end to end XGBoost pipeline: ingest, train, verify, deploy](https://github.com/mlrun/demo-xgb-project)
+- Examples for MLRun with scale-out runtimes
   * [Distributed TensorFlow (Horovod and MpiJob)](examples/mlrun_mpijob_classify.ipynb)
   * [Nuclio-serving (Serverless model serving)](examples/xgb_serving.ipynb)
   * [Dask](examples/mlrun_dask.ipynb)
   * [Spark](examples/mlrun_sparkk8s.ipynb)
-* MLRun Projects
+- MLRun Projects
   * [Load a project from remote Git and run pipelines](examples/load-project.ipynb)
   * [Create a new project + functions + pipelines and upload to Git](examples/new-project.ipynb)
-* [Importing and exporting functions using files or git](examples/mlrun_export_import.ipynb)
-* [Query MLRUN DB](examples/mlrun_db.ipynb)
+- [Importing and exporting functions using files or git](examples/mlrun_export_import.ipynb)
+- [Query the MLRun DB](examples/mlrun_db.ipynb)
 
 #### Additional Examples
 
-* Complete demos can be found in [mlrun/demos repo](https://github.com/mlrun/demos)
+- Complete demos can be found in [mlrun/demos repo](https://github.com/mlrun/demos)
   * [Deep learning pipeline](https://github.com/mlrun/demos/blob/master/image_classification/README.md) (data collection, labeling, training, serving + automated workflow)
-* MLRun Functions Library (work in progress) is in [mlrun/functions repo](https://github.com/mlrun/functions)
+- MLRun Functions Library (work in progress) is in [mlrun/functions repo](https://github.com/mlrun/functions)
 
-## Architecture
+<a id="arch-n-qs-tutorial"></a>
+## Architecture and Quick-Start Tutorial
 
-### Managed and portable execution
+- [Managed and Portable Execution ](#managed-and-portable-execution)
+- [Automated Code Deployment and Containerization](#auto-parameterization-artifact-tracking-n-logging)
+- [Using Hyperparameters for Job Scaling](#using-hyperparameters-for-job-scaling)
+- [Automated Code Deployment and Containerization](#auto-code-deployment-n-containerization)
+- [Build and run function from a remote IDE using the CLI](examples/remote.md)
+- [Running an MLRun ML Pipeline with Kubeflow Pipelines](#run-mlrun-ml-pipeline-w-kubeflow-pipelines)
+- [Viewing the Run Results](#view-run-results)
+  - [Using the MLRun Dashboard (UI)](#get-run-results-mlrun-ui)
+  - [Using the db Method](#get-run-results-db-medhod)
 
-We have few main elements which are usually grouped into "Projects":
+<a id="managed-and-portable-execution"></a>
+### Managed and Portable Execution
 
-* **Function** - a software package with one or more methods and a bunch of `runtime` specific attributes (e.g. image, command, args, environment, ..). function can run one or many runs/tasks, they can be created from templates, and be stored in a versioned database.
-* **Task** - define the desired parameters, inputs, outputs of a job/task.
+MLRun has a few main components, which are usually grouped into "projects":
+
+- **Function** &mdash; a software package with one or more methods and a bunch of `runtime` specific attributes (for example, image, command, args, environment, ...). function can run one or many runs/tasks, they can be created from templates, and be stored in a versioned database.
+- **Task** &mdash; define the desired parameters, inputs, outputs of a job/task.
 Task can be created from a template and run over different `runtimes` or `functions`.
-* **Run** - is the result of running a Task on a Function, it has all the attributes of a Task + the execution status and results.
-* **Artifact** - versioned files, objects, datasets, models, etc. which are produced or consumed by functions/runs/workflows.
-* **Workflow** - defines a pipeline/graph (DAG) of functions (using KubeFlow pipelines)
+- **Run** &mdash; is the result of running a Task on a Function, it has all the attributes of a Task + the execution status and results.
+- **Artifact** &mdash; versioned files, objects, data sets, models, etc. which are produced or consumed by functions/runs/workflows.
+- **Workflow** &mdash; defines a pipeline/graph (DAG) of functions (using Kubeflow Pipelines)
 
-MLRun support multiple `runtimes` i.e. computation frameworks, such as local, kubernetes job, dask, nuclio, spark, mpijob (Horovod). runtimes may support parallelism and clustering (i.e. distribute the work among processes/containers).
+MLRun support multiple "runtimes" &mdash; computation frameworks &mdash; such as local, Kubernetes job, Dask, Nuclio, Spark, or MPI job (Horovod).
+Runtimes may support parallelism and clustering to distribute the work among processes/containers.
 
-example:
+Example
+```python
+# Create a task and set its attributes
+task = NewTask(handler=handler, name='demo', params={'p1': 5})
+task.with_secrets('file', 'secrets.txt').set_label('type', 'demo')
 
-    # create a task and set its attributes
-    task = NewTask(handler=handler, name='demo', params={'p1': 5})
-    task.with_secrets('file', 'secrets.txt').set_label('type', 'demo')
+run = new_function(command='myfile.py', kind='job').run(task)
+run.logs(watch=True)
+run.show()
+print(run.artifact('model'))
+```
 
-    run = new_function(command='myfile.py', kind='job').run(task)
-    run.logs(watch=True)
-    run.show()
-    print(run.artifact('model'))
+In this example, the task defines your run spec (parameters, inputs, secrets, etc.).
+You run the task on a **"job"** function, and print the result output (in this case, the **"model"** artifact) or watch the progress of that run.
+See the [docs and example notebook](examples/mlrun_basics.ipynb).
 
-in this example the task defines our run spec (parameters, inputs, secrets, ..) .
-we run this task on a `job` function, and print out the result output (in this case the `model` artifact) or watch the progress of that run. [see docs and example notebook](examples/mlrun_basics.ipynb).
+You can run the same **"task"** on different functions &mdash; enabling code portability, re-use, and AutoML &mdash; or you can use the same **"function"** to run different tasks or parameter combinations with minimal coding effort.
 
-we can run the same `task` on different functions, enabling code portability, re-use, and AutoML, or we can use the same `function` to run different tasks or parameter combinations with minimal coding effort.
-
-moving from run on a local notebook, to running in a container job, a scaled-out framework
-or an automated workflow engine like KubeFlow is seamless, just swap the runtime/function or wire functions in a graph,
-[see this tutorial for details](), CI/CD steps (build, deploy) can also be specified as part of the workflow (using `.deploy_step()` function methods).
+Moving from run on a local notebook, to running in a container job, a scaled-out framework, or an automated workflow engine like Kubeflow is seamless, just swap the runtime/function or wire functions in a graph; [see this tutorial for details]().
+CI/CD steps (build, deploy) can also be specified as part of the workflow (using `.deploy_step()` function methods).
 
 Functions can be created using one of three methods:
-* `new_function()` - create a function object from scratch or another function
-* `code_to_function()` - functions are created from source code, source URL or notebook
-* `import_function()` - functions are imported from a local/remote YAML file or from the function DB (prefix: `db://<project>/<name>[:tag]`)
 
-`function.save(tag="")` (store in db) and `function.export(target-path)` (store yaml) can be used to save functions
+- `new_function` &mdash; create a function object from scratch or another function.
+- `code_to_function` &mdash; functions are created from source code, source URL or notebook.
+- `import_function` &mdash; functions are imported from a local/remote YAML file or from the function DB (prefix: `db://<project>/<name>[:<tag>]`).
 
-See each function doc/help and examples for details
+`function.save(tag="")` (store in db) and `function.export(target-path)` (store yaml) can be used to save functions.
 
-### Automated parametrization, artifact tracking and logging
+See each function doc/help and examples for details.
 
-Once our job run we need to track the run, their inputs, parameters and outputs.
-`mlrun` introduces a concept of an ML `context`, the code can be instrumented to get parameters and inputs from the context as well as log outputs, artifacts, tag, and time-series metrics.
+<a id="auto-parameterization-artifact-tracking-n-logging"></a>
+### Automated Parameterization, Artifact Tracking, and Logging
 
+After running a job, you need to track the run, it inputs, parameters, and outputs.
+MLRun introduces a concept of an ML **"context"**: the code can be instrumented to get parameters and inputs from the context, as well as log outputs, artifacts, tags, and time-series metrics.
 
-<b>Example, XGBoost training function</b>
+<b>Example XGBoost training function</b>
 
 ```python
 import xgboost as xgb
@@ -187,23 +213,23 @@ def xgb_train(context,
                          local_path=model_name, labels={'framework': 'xgboost'})
 ```
 
+This example function can be executed locally with parameters (for example, `eta` or `gamma`).
+The results and artifacts can be logged automatically into a database by using a single command:
+```
+train_run = new_function().run(handler=xgb_train).with_params(eta=0.3)
+```
 
-The function above can be executed locally with parameters (e.g. eta, gamma), the results and artifacts will be logged automatically into a database with a single command.
+You can swap the function with a serverless runtime and the same will run on a cluster.<br>
+This can result in 10x performance boost.
 
-    train_run = new_function().run(handler=xgb_train).with_params(eta=0.3)
+The [**examples**](examples) directory contains more examples, using different runtimes &mdash; such as a Kubernetes job, Nuclio, Dask, Spark, or an MPI job.
 
-we can swap the `function` with a serverless runtime and the same will run on a cluster.<br>
-this can result in 10x performance boost.
-more examples can be found in [`\examples`](examples) directory, with `kubernetes job`, `nuclio`, `dask`, `Spark`, or `mpijob` runtimes.
+If your run your code from `main`, you can get the runtime context by calling the `get_or_create_ctx` method.
 
-if we run our code from `main` we can get the runtime context by calling the `get_or_create_ctx`
-method.
+The following example demonstrates how you can use the context object in various ways to read and write metadata, secrets, inputs, or outputs.
+For more details, see the [**horovod-training.py**](examples/horovod-training.py) example.
 
-The example below shows us how we can use the `context` object provide us various ways to
-read and write metadata, secrets, inputs, or outputs. see the [horovod-training.py](examples/horovod-training.py)
-example for more details.
-
-<b>Example, obtaining and using the context</b>
+<b>Example: obtaining and using the context object</b>
 
 ```python
 from mlrun import get_or_create_ctx
@@ -211,30 +237,32 @@ from mlrun.artifacts import ChartArtifact, TableArtifact
 
 
 def my_job(context, p1=1, p2='x'):
-    # load MLRUN runtime context (will be set by the runtime framework e.g. KubeFlow)
+    # Load the MLRun runtime context; the context is set by the runtime
+    # framework - for example, Kubeflow
 
-    # get parameters from the runtime context (or use defaults)
+    # Get parameters from the runtime context (or use defaults)
 
-    # access input metadata, values, files, and secrets (passwords)
+    # Access input metadata, values, files, and secrets (passwords)
     print(f'Run: {context.name} (uid={context.uid})')
     print(f'Params: p1={p1}, p2={p2}')
     print('accesskey = {}'.format(context.get_secret('ACCESS_KEY')))
     print('file\n{}\n'.format(context.get_input('infile.txt', 'infile.txt').get()))
 
-    # Run some useful code e.g. ML training, data prep, etc.
+    # Run some useful code - for example, ML training or data preparation
 
-    # log scalar result values (job result metrics)
+    # Log scalar result values (job-result metrics)
     context.log_result('accuracy', p1 * 2)
     context.log_result('loss', p1 * 3)
     context.set_label('framework', 'sklearn')
 
-    # log various types of artifacts (file, web page, table), will be versioned and visible in the UI
+    # Log various types of artifacts (file, web page, table), which will be
+    # versioned and visible in the MLRun dashboard
     context.log_artifact('model', body=b'abc is 123', local_path='model.txt', labels={'framework': 'xgboost'})
     context.log_artifact('html_result', body=b'<b> Some HTML <b>', local_path='result.html')
     context.log_artifact(TableArtifact('dataset', '1,2,3\n4,5,6\n', visible=True,
                                         header=['A', 'B', 'C']), local_path='dataset.csv')
 
-    # create a chart output (will show in the pipelines UI)
+    # Create a chart output, which will be visible in the pipelines UI
     chart = ChartArtifact('chart')
     chart.labels = {'type': 'roc'}
     chart.header = ['Epoch', 'Accuracy', 'Loss']
@@ -250,31 +278,35 @@ if __name__ == "__main__":
     my_job(context, p1, p2)
 ```
 
+This code sample can be invoked with the following code:
+```python
+run = run_local(task, command='training.py')
+```
+Alternatively, it can be invoked by using the `mlrun` CLI; edit the parameters and the S3 path in the input data, as needed command, and ensure that there's a **secrets.txt** file with the required S3 download credentials:
+```sh
+mlrun run --name train -p p2=5 -i infile.txt=s3://my-bucket/infile.txt -s file=secrets.txt training.py
+```
 
-the code above can be invoked by calling:
+<a id="using-hyperparameters-for-job-scaling"></a>
+### Using Hyperparameters for Job Scaling
 
-    run = run_local(task, command='training.py')
+Data science involves long-running compute and data-intensive tasks.
+To gain efficiency, you need to implement parallelism whenever possible.
+MLRun delivers scalability using two mechanisms:
 
-or using the cli (while substituting the parameter and input data with remote S3 file):
+1. Clustering &mdash; run the code on a distributed processing engined (such as Dask, Spark, or Horovod).
+2. Load-balancing/partitioning &mdash; partition the work to multiple workers.
 
-    mlrun run --name train -p p2=5 -i infile.txt=s3://my-bocket/infile.txt -s file=secrets.txt training.py
+MLRun can accept hyperparameters or parameter lists, deploy many parallel workers, and partition the work among those.
+The parallelism implementation is left to the runtime.
+Each runtime may have its own way of running tasks concurrently.
+For example, the Nuclio serverless engine manages many micro threads in the same process, which can run multiple tasks in parallel.
+In a containerized system like Kubernetes, you can launch multiple containers each processing a different task.
 
+MLRun supports parallelism.
+You can run many parameter combinations for the previous `xgboost` function by using hyperparameters:
 
-### Using hyper parameters for job scaling
-
-Data-science involve long-running compute and data intensive tasks, in order to gain efficiency we need to implement parallelism where ever we can, `mlrun` deliver scalability using two mechanisms:
-
-1. Clustering - run the code on distributed processing engined (Dask, Spark, Horovod, ..)
-2. Load-balancing/partitioning - partition the work to multiple workers
-
-mlrun can accept hyper-parameters or parameter lists, deploy many parallel workers, and partition the work among those.
-the parallelism implementation is left to the `runtime`, each may have its own way to run tasks concurrently.
-for example `nuclio` serverless engine manage many micro-threads in the same process which can run multiple tasks in parallel.
-In a containerized system like Kubernetes we can launch multiple containers each processing a different task.
-
-In `mlrun` we implement parallelism you can run many parameter combinations for the `xgboost`
-function above by using `hyper params`:
-
+```python
     parameters = {
          "eta":       [0.05, 0.10, 0.20, 0.30],
          "max_depth": [3, 4, 5, 6, 8, 10],
@@ -283,37 +315,48 @@ function above by using `hyper params`:
 
     task = NewTask(handler=xgb_train, out_path='/User/mlrun/data').with_hyper_params(parameters, 'max.accuracy')
     run = run_local(task)
+```
 
-The line above tells mlrun to run the same task while choosing the parameters from multiple lists (GridSearch).
-it will record ALL the runs, but mark the one with minimal `loss` as the selected result.
-for parallelism it would be better to use `runtimes` like `dask`, `nuclio`, or `jobs`.
+This code demonstrates how to tell MLRun to run the same task while choosing the parameters from multiple lists (grid search).
+MLRun will record all the runs, but mark only the run with minimal loss as the selected result.
+For parallelism, it would be better to use runtimes like Dask, Nuclio, or jobs.
 
-This can also be done via the CLI:
+The same logic and also be executed by using the MLRun CLI (`mlrun`):
+```sh
+mlrun run --name train_hyper -x p1="[3,7,5]" -x p2="[5,2,9]" training.py
+```
 
-    mlrun run --name train_hyper -x p1="[3,7,5]" -x p2="[5,2,9]" training.py
+You can use a parameters file if you want to control the parameter combinations or if the parameters are more complex.
+The following code demonstrates how to configure a CSV parameters file:
 
-We can use a parameter file if we want to control the parameter combinations or if the parameters are more complex.
-
+```python
     task = NewTask(handler=xgb_train).with_param_file('params.csv', 'max.accuracy')
     run = run_local(task)
+```
 
-> Note: parameter list can be used for various tasks, another example is to pass a list of files and have multiple workers process them simultaneously instead of one at a time.
+> **Note:** Parameter lists can be used for various tasks.
+> Another example is to pass a list of files and have multiple workers process the files simultaneously instead of one at a time.
 
+<a id="auto-code-deployment-n-containerization"></a>
+### Automated Code Deployment and Containerization
 
-### Automated code deployment and containerization
+MLRun adopts Nuclio serverless technologies for automatically packaging code and building containers.
+This way, you can specify code with some package requirements and let the system build and deploy your software.
 
-Mlrun adopts `nuclio` serverless technologies for automatically packaging code and building containers,
-this way we can specify code with some package requirements and let the system build and deploy our software.
+Building and deploying a function is as easy as typing `function.deploy(...)`.
+This initiates a build or deployment job.
+Deployment jobs can be incorporated in pipelines just like regular jobs (using the `.deploy_step` method), enabling full automation and CI/CD.
 
-Building and deploying a function is as easy as typing `function.deploy(..)`, this will initiate a build/deployment job,
-deployment jobs can be incorporated in pipelines just like regular jobs (using the `.deploy_step()` method, enabeling full automation and CI/CD.
+Functions can be built from source code, function specs, notebooks, Git repos, or TAR archives.
 
-functions can be built from source code, function specs, notebooks, GIT repos, or tar archives.
+Build can also be done using the `mlrun` CLI, by providing the CLI with the path to a YAML function configuration file; you can generate such a file by using the `function.to_yaml` or `function.export` methods.
 
-build can also be done using the CLI, you need to provide the function `YAML` file (can be generated using `function.to_yaml()` or `function.export()`)
+For example, the following CLI code refers to a **function.yaml** file:
+```sh
+mlrun build function.yaml
+```
 
-Example `function.yaml`:
-
+Following is an example **function.yaml** file:
 ```yaml
 kind: job
 metadata:
@@ -329,30 +372,29 @@ spec:
     base_image: mlrun/mlrun:dev
     source: git://github.com/mlrun/ci-demo.git
 ```
-use:
 
-    mlrun build function.yaml
+For more examples of building and running functions from remotely using the MLRun CLI, see the [**remote**](examples/remote.md) example.
 
-
-See [more examples](examples/remote.md) for building and running fuctions from remote using the CLI.
-
-
-we can convert our notebook into a containerized job, see [detailed example](examples/mlrun_jobs.ipynb):
+You can also convert your notebook into a containerized job, as demonstrated in the following sample code.
+For details, see the [**mlrun_jobs.ipynb**](examples/mlrun_jobs.ipynb) example.
 
 ```python
-# create an ML function from the notebook, attache it to iguazio data fabric (v3io)
+# Create an ML function from the notebook; store data in the data store of the
+# Iguazio Data Science Platform (v3io mount)
 fn = code_to_function(kind='job').apply(mount_v3io())
 
-# prepare an image from the dependencies, so we wont need to build the image every run
+# Prepare an image from the dependencies, to avoid building it on each run
 fn.build(image='mlrun/nuctest:latest')
 ```
 
-## Running with KubeFlow ML Pipeline
+<a id="run-mlrun-ml-pipeline-w-kubeflow-pipelines"></a>
+## Running an MLRun ML Pipeline with Kubeflow Pipelines
 
-Running in a pipeline would be similar to running using the command line
-mlrun will automatically save outputs and artifacts in a way which will be visible to KubeFlow, and allow interconnecting steps
+ML pipeline execution in MLRun is similar to CLI execution.
+MLRun automatically saves outputs and artifacts in a way that is visible to [Kubeflow Pipelines](https://github.com/kubeflow/pipelines), and allows interconnecting steps.
 
-see a [full pipelines notebook example](https://github.com/mlrun/demo-xgb-project/blob/master/notebooks/train-xgboost.ipynb)
+For an example of a full ML pipeline that's implemented in a Jupyter notebook, see the MLRun [demo-xgb-project](https://github.com/mlrun/demo-xgb-project) repository.
+The  [**train-xgboost.ipynb**](https://github.com/mlrun/demo-xgb-project/blob/master/notebooks/train-xgboost.ipynb) demo notebook includes the following code:
 ```python
 @dsl.pipeline(
     name='My XGBoost training pipeline',
@@ -377,92 +419,164 @@ def xgb_pipeline(
                          inputs={'iterations': train.outputs['iteration_results']},
                          outputs=['iris_dataset'])
 
-    # deploy the model serving function with inputs from the training stage
+    # Deploy the model-serving function with inputs from the training stage
     deploy = srvfn.deploy_step(project = 'iris', models={'iris_v1': train.outputs['model']})
 ```
 
-## MLRun User Interface
+<a id="view-run-results"></a>
+### Viewing the Run Results
 
-The UI require running the DB/API server, see k8s YAML files under [/hack](./hack).
+You can view MLRun execution results from the graphical [MLRun dashboard](#mlrun-ui).
 
-<br><p align="center"><img src="mlrunui.png" width="800"/></p><br>
+If you configured an MLRun database (`rundb`), the results and artifacts from each run are recorded.
 
-## Run and Artifact Database
-
-if you have specified a `rundb` the results and artifacts from each run are recorded
-
-you can use various `db` methods, see the [example notebook](examples/mlrun_db.ipynb)
+You can use various `db` methods; see the [example notebook](examples/mlrun_db.ipynb).
 
 ```python
 from mlrun import get_run_db
 
-# connect to a local file DB
+# Connect to a local file DB
 db = get_run_db('./').connect()
 
-# list all runs
+# List all runs
 db.list_runs('').show()
 
-# list all artifact for version "latest"
+# List all artifact for version "latest"
 db.list_artifacts('', tag='').show()
 
-# check different artifact versions
+# Check different artifact versions
 db.list_artifacts('ch', tag='*').show()
 
-# delete completed runs
+# Delete completed runs
 db.del_runs(state='completed')
 ```
 
+<a id="mlrun-ui"></a>
+## The MLRun Dashboard
+
+The MLRun dashboard is a graphical user interface (GUI) for working with MLRun.
+<!-- SLSL: TODO: Add more info after I establish what can be done from the UI.
+  Can they also run jobs, or just view results? Can they analyze results? etc.
+-->
+
+> **Note:** The UI requires an MLRun database/API service; see the Kubernetes YAML files in the [**hack**](hack) directory.
+<!-- SLSL: How are the hack YAML files related to running an MLRun API service? -->
+
+<br><p align="center"><img src="mlrunui.png" width="800"/></p><br>
+
+<a id="additional-info-n-examples"></a>
 ## Additional Information and Examples
 
-### Replacing Runtime Context Parameters form CLI
+- [Replacing Runtime Context Parameters from the CLI](#replace-runtime-context-param-from-cli)
+- [Using Remote Function Code](#using-remote-function-code)
+  - [Function Deployment](#using-remote-function-code-function-deployment)
+- [Running the MLRun Database/API Service](#run-mlrun-db-service)
 
-`python -m mlrun run -p p1=5 -s file=secrets.txt -i infile.txt=s3://mybucket/infile.txt training.py`
+<a id="replace-runtime-context-param-from-cli"></a>
+### Replacing Runtime Context Parameters from the CLI
 
-when running the command above:
-* the parameter `p1` will be overwritten with `5`
-* the file `infile.txt` will be loaded from a remote S3 bucket
-* credentials (for S3 and the app) will be loaded from the `secrets.txt` file
+```sh
+python -m mlrun run -p p1=5 -s file=secrets.txt -i infile.txt=s3://mybucket/infile.txt training.py
+```
 
-### Running Against Remote Code/Function
+When running this sample command &mdash;
+- The value of parameter `p1` is set to `5` (overwriting the current value).
+- The file **infile.txt** is downloaded from a remote AWS S3 bucket.
+- The credentials for the S3 downloaded are retrieved from the **secrets.txt** file.
 
-The same code can be implemented as a remote HTTP endpoint e.g. using [nuclio serverless](https://github.com/nuclio/nuclio) functions
+<a id="using-remote-function-code"></a>
+### Using Remote Function Code
 
-for example the same code can be wrapped in a nuclio handler and be remotely executed using the same CLI
+The same code can be implemented as a remote HTTP endpoint &mdash; for example, by using [Nuclio serverless functions](https://github.com/nuclio/nuclio).
 
+For example, the same code can be wrapped within a Nuclio handler and executed remotely by using the same CLI command.
+
+<a id="using-remote-function-code-function-deployment"></a>
 #### Function Deployment
 
-to deploy the function into a cluster you can run the following commands
-(make sure you first installed the nuclio-jupyter package)
+To deploy the function into a cluster, you can run the following commands.
+
+> **Note: You must first install the [`nuclio-jupyter`](https://github.com/nuclio/nuclio-jupyter) package for using Nuclio from Jupyter Notebook.
 
 ```python
-# create the function from the notebook code + annotations, add volumes and parallel HTTP trigger
+# Create the function from the notebook code and annotations; add volumes and
+# an HTTP trigger with multiple workers for parallel execution
 fn = code_to_function('xgb_train', runtime='nuclio:mlrun')
 fn.apply(mount_v3io()).with_http(workers=32)
 
 run = fn.run(task, handler='xgb_train')
 ```
 
+To execute the code remotely, just substitute the file name with the function URL' replace `<function endpoint>` with your remote function endpoint:
+<!-- SLSL: I added the replace text, but they would probably also need to
+  replace the S3 bucket URL, file name, and parameter values, as indicated
+  elsewhere. => TODO NOWNOW -->
+```sh
+python -m mlrun run -p p1=5 -s file=secrets.txt -i infile.txt=s3://mybucket/infile.txt http://<function-endpoint>
+```
 
-To execute the code remotely just substitute the file name with the function URL
+<a id="run-mlrun-db-service"></a>
+### Running the MLRun Database/API Service
 
-`python -m mlrun run -p p1=5 -s file=secrets.txt -i infile.txt=s3://mybucket/infile.txt http://<function-endpoint>`
+The MLRun database/API service includes the MLRun database and HTTP web API.
+You can run this service in either of the following ways:
+- Using [Docker](#run-mlrun-service-docker)
+- Using the [CLI](#run-mlrun-service-cli)
 
-
-### Running HTTP Database
-
+<a id="run-mlrun-service-docker"></a>
 #### Docker
 
-Run with `docker run -p8080:8080 -v /path/to/db:/mlrun/db`
+Use the following command to run the MLRun database/API service using Docker; replace `<DB path>` with the path to the MLRun database"
+```sh
+docker run -p8080:8080 -v <DB path>:/mlrun/db
+```
+<!-- SLSL: NOWNOWNOW
+  I added the preceding text and replaced `/path/to/db` in the command
+  with <DB path>.
+  (1) Should they always add `:/mlrun/db` to the path, as currently implied?
+  (2) Can they also set a service URL rather than a local `/...` path?
+  (3) We mention below the option of setting the `MLRUN_httpdb__port` envar to
+      change the port. ->
+      (a) Does the port number in the `docker` command have to be 8080 and can
+          only be changed via the envar or is the above just an example?
+      (b) If they can also set a different port number in the `docker` command,
+          we need replace 8080 with a placeholder and edit the related text. =>
+          Should both 8080 instances be replaced or just the second one because
+          the port parameter is named `p8080`?
+      (c) Can they also set the MLRun DB path/service URL by using the
+          `MLRUN_httpdb__dirpath` environment variable instead of setting it
+          in the `docker` command usihng the `-v` option?
+-->
 
+You can set the `MLRUN_httpdb__port` environment variable to change the port.
 
-You can pass `MLRUN_httpdb__port` environment variable to change port.
+<a id="run-mlrun-service-cli"></a>
+#### Command line
 
-#### Command Line
+Use the `mlrun` CLI's `db` command to run an MLRun database/API service:
+<!-- SLSL: NOWNOW
+- I switched the order to place the options before the command, per
+  the CLI usage instructions that I saw in a cell output in the examples/
+  mlrun_basics.ipynb NB, which also makes sense for CLI syntax, even though I
+  suspect that both variations work (like in the TSDB CLI).
+  (Yasha though it should be `mlrun <command> [OPTIONS]`.)
+- Should we mention here and/or in the CLI help txt (in __main__.py) the option
+  of setting the MLRUN_httpdb__port and/or MLRUN_httpdb__dirpath environment
+  variables instead of using the command options / to set the default values?
+  (The README already mentions the port envar in the Docker execution section.)
+-->
+```sh
+mlrun [OPTIONS] db
+```
 
-    mlrun db [options]
-
+To see the supported options, run `mlrun --help db`:
 ```
 Options:
-  -p, --port INTEGER  port to listen on
-  -d, --dirpath TEXT  database directory (dirpath)
+  -p, --port INTEGER  Port to listen on
+  -d, --dirpath TEXT  Path to the MLRun DB/API service directory
 ```
+<!-- SLSL: TODO: Confirm my CLI help-text changes in __main__.py and in the
+  examples/mlrun_basics.ipynb CLI cell output with the help text.
+  `dirpath` changed from "api/db path".
+  NOWNOW -->
+

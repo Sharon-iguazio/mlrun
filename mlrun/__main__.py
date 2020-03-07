@@ -413,14 +413,15 @@ def get(kind, name, selector, namespace, uid, project, tag, db, extra_args):
             lines.append(line)
         print(tabulate(lines, headers=headers))
     else:
-        print('currently only get pods | runs | artifacts | func [name] are supported')
+        print('Currently, only get pods | runs | artifacts | func [name] are supported.')
 
 
 @main.command()
-@click.option('--port', '-p', help='port to listen on', type=int)
-@click.option('--dirpath', '-d', help='database directory (dirpath)')
+@click.option('--port', '-p', help='Port to listen on', type=int)
+@click.option('--dirpath', '-d',
+              help='Path to the MLRun DB/API service directory')
 def db(port, dirpath):
-    """Run HTTP api/database server"""
+    """Run an MLRun database/HTTP API service"""
     env = environ.copy()
     if port is not None:
         env['MLRUN_httpdb__port'] = str(port)
@@ -432,6 +433,7 @@ def db(port, dirpath):
     returncode = child.wait()
     if returncode != 0:
         raise SystemExit(returncode)
+# SLSL: NOWNOW I edited the description from "Run HTTP api/database server".
 
 
 @main.command()

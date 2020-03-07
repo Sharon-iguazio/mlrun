@@ -1,9 +1,8 @@
-# for this function to run in nuclio you need to:
-# - set the python base image e.g.:
+# To run this function with Nuclio, you must do the following:
+# - Set the Python base image. For example:
 #     python:3.6-jessie
-# - add mlrun package install to the Build commands:
+# - Add installation of the MLRun package (`mlrun`) to the build commands:
 #     pip install mlrun
-
 
 from mlrun import get_or_create_ctx
 import time
@@ -19,11 +18,11 @@ def handler(context, event):
 
     time.sleep(1)
 
-    # log scalar values (KFP metrics)
+    # Log scalar values (Kubeflow Pipelines metrics)
     ctx.log_result('accuracy', p1 * 2)
     ctx.log_result('latency', p1 * 3)
 
-    # log various types of artifacts (and set UI viewers)
+    # Log various types of artifacts and set dashboard (UI) viewers
     ctx.log_artifact('test', body=b'abc is 123', local_path='test.txt')
     ctx.log_artifact('test_html', body=b'<b> Some HTML <b>', format='html')
 
