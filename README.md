@@ -77,20 +77,20 @@ kubectl apply -n <namespace> -f <updated-yaml-file>
 - [From local runs to Kubernetes jobs, and automated pipelines in a single Notebook](examples/mlrun_jobs.ipynb)
 - [Create an end to end XGBoost pipeline: ingest, train, verify, deploy](https://github.com/mlrun/demo-xgb-project)
 - Examples for MLRun with scale-out runtimes
-  * [Distributed TensorFlow (Horovod and MpiJob)](examples/mlrun_mpijob_classify.ipynb)
-  * [Nuclio-serving (Serverless model serving)](examples/xgb_serving.ipynb)
-  * [Dask](examples/mlrun_dask.ipynb)
-  * [Spark](examples/mlrun_sparkk8s.ipynb)
+  - [Distributed TensorFlow (Horovod and MpiJob)](examples/mlrun_mpijob_classify.ipynb)
+  - [Nuclio-serving (Serverless model serving)](examples/xgb_serving.ipynb)
+  - [Dask](examples/mlrun_dask.ipynb)
+  - [Spark](examples/mlrun_sparkk8s.ipynb)
 - MLRun Projects
-  * [Load a project from remote Git and run pipelines](examples/load-project.ipynb)
-  * [Create a new project + functions + pipelines and upload to Git](examples/new-project.ipynb)
+  - [Load a project from remote Git and run pipelines](examples/load-project.ipynb)
+  - [Create a new project + functions + pipelines and upload to Git](examples/new-project.ipynb)
 - [Importing and exporting functions using files or git](examples/mlrun_export_import.ipynb)
 - [Query the MLRun DB](examples/mlrun_db.ipynb)
 
 #### Additional Examples
 
 - Complete demos can be found in [mlrun/demos repo](https://github.com/mlrun/demos)
-  * [Deep learning pipeline](https://github.com/mlrun/demos/blob/master/image_classification/README.md) (data collection, labeling, training, serving + automated workflow)
+  - [Deep learning pipeline](https://github.com/mlrun/demos/blob/master/image_classification/README.md) (data collection, labeling, training, serving + automated workflow)
 - MLRun Functions Library (work in progress) is in [mlrun/functions repo](https://github.com/mlrun/functions)
 
 <a id="arch-n-qs-tutorial"></a>
