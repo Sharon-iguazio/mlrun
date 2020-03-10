@@ -12,34 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """mlrun database HTTP server"""
-from argparse import ArgumentParser
 import ast
 import mimetypes
 import tempfile
+import traceback
+from argparse import ArgumentParser
 from base64 import b64decode
+from datetime import date, datetime
 from distutils.util import strtobool
 from functools import wraps
 from http import HTTPStatus
+from operator import attrgetter
 from os import environ, remove
-import traceback
-from datetime import datetime, date
 from pathlib import Path
+
+from flask import Flask, Response, jsonify, request
+from flask.json import JSONEncoder
 from kfp import Client as kfclient
 
-from flask import Flask, jsonify, request, Response
-from flask.json import JSONEncoder
-
 from mlrun.builder import build_runtime
+from mlrun.config import config
 from mlrun.datastore import get_object, get_object_stat
 from mlrun.db import RunDBError, RunDBInterface, periodic
-from mlrun.db.sqldb import SQLDB
 from mlrun.db.filedb import FileRunDB
-from mlrun.utils import logger, parse_function_uri, get_in, update_in, now_date
-from mlrun.config import config
-from mlrun.run import new_function, import_function
+from mlrun.db.sqldb import SQLDB, to_dict as db2dict, table2cls
 from mlrun.k8s_utils import K8sHelper
+from mlrun.run import import_function, new_function
 from mlrun.runtimes import runtime_resources_map
 from mlrun.scheduler import Scheduler
+from mlrun.utils import get_in, logger, now_date, parse_function_uri, update_in
 
 
 class CustomJSONEncoder(JSONEncoder):
@@ -56,7 +57,7 @@ class CustomJSONEncoder(JSONEncoder):
 
 
 _scheduler: Scheduler = None
-_db: RunDBInterface
+_db: RunDBInterface = None
 _k8s: K8sHelper = None
 _logs_dir = None
 app = Flask(__name__)
@@ -176,7 +177,8 @@ def _submit(data):
                 if not runtime:
                     return json_error(
                         HTTPStatus.BAD_REQUEST,
-                        reason='runtime error: function {} not found'.format(url),
+                        reason='runtime error: function {} not found'.format(
+                            url),
                     )
                 fn = new_function(runtime=runtime)
 
@@ -213,7 +215,8 @@ def submit_pipeline():
     namespace = request.args.get('namespace', config.namespace)
     experiment_name = request.args.get('experiment', 'Default')
     run_name = request.args.get('run', '')
-    run_name = run_name or experiment_name + ' ' + datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+    run_name = run_name or \
+        experiment_name + ' ' + datetime.now().strftime('%Y-%m-%d %H-%M-%S')
 
     arguments = {}
     arguments_data = request.headers.get('pipeline-arguments')
@@ -323,7 +326,8 @@ def start_function():
 
     try:
         fn.set_db_connection(_db)
-        resp = resource['start'](fn)
+        #  resp = resource['start'](fn)  # TODO: handle resp?
+        resource['start'](fn)
         fn.save(versioned=False)
         logger.info('Fn:\n %s', fn.to_yaml())
     except Exception as err:
@@ -775,15 +779,61 @@ def list_functions():
     )
 
 
-# curl http://localhost:8080/projects
+# curl -d '{"name": "p1", "description": "desc", "users": ["u1", "u2"]}' \
+#   http://localhost:8080/project
+@app.route('/api/project', methods=['POST'])
+@catch_err
+def add_project():
+    data = request.get_json(force=True)
+    for attr in ('name', 'owner'):
+        if attr not in data:
+            return json_error(error=f'missing {attr!r}')
+
+    project_id = _db.add_project(data)
+    return jsonify(
+        ok=True,
+        id=project_id,
+        name=data['name'],
+    )
+
+# curl -d '{"name": "p1", "description": "desc", "users": ["u1", "u2"]}' \
+#   -X UPDATE http://localhost:8080/project
+@app.route('/api/project/<name>', methods=['POST'])
+@catch_err
+def update_project(name):
+    data = request.get_json(force=True)
+    _db.update_project(name, data)
+    return jsonify(ok=True)
+
+# curl http://localhost:8080/project/<name>
+@app.route('/api/project/<name>', methods=['GET'])
+@catch_err
+def get_project(name):
+    project = _db.get_project(name)
+    if not project:
+        return json_error(error=f'project {name!r} not found')
+
+    resp = {
+        'name': project.name,
+        'description': project.description,
+        'owner': project.owner,
+        'source': project.source,
+        'users': [u.name for u in project.users],
+    }
+
+    return jsonify(ok=True, project=resp)
+
+
+# curl http://localhost:8080/projects?full=true
 @app.route('/api/projects', methods=['GET'])
 @catch_err
 def list_projects():
+    full = strtobool(request.args.get('full', 'no'))
+    fn = db2dict if full else attrgetter('name')
     return jsonify(
         ok=True,
-        projects=_db.list_projects()
+        projects=[fn(p) for p in _db.list_projects()]
     )
-
 
 # curl http://localhost:8080/schedules
 @app.route('/api/schedules', methods=['GET'])
@@ -792,6 +842,60 @@ def list_schedules():
     return jsonify(
         ok=True,
         schedules=list(_db.list_schedules())
+    )
+
+
+@app.route('/api/<project>/tag/<name>', methods=['POST'])
+@catch_err
+def tag_objects(project, name):
+    try:
+        data: dict = request.get_json(force=True)
+    except ValueError:
+        return json_error(HTTPStatus.BAD_REQUEST, reason='bad JSON body')
+
+    objs = []
+    for typ, query in data.items():
+        cls = table2cls(typ)
+        if cls is None:
+            err = f'unknown type - {typ}'
+            return json_error(HTTPStatus.BAD_REQUEST, reason=err)
+        # {'name': 'bugs'} -> [Function.name=='bugs']
+        db_query = [
+            getattr(cls, key) == value for key, value in query.items()
+        ]
+        # TODO: Change _query to query?
+        # TODO: Not happy about exposing db internals to API
+        objs.extend(_db.session.query(cls).filter(*db_query))
+    _db.tag_objects(objs, project, name)
+    return jsonify(ok=True, project=project, name=name, count=len(objs))
+
+
+@app.route('/api/<project>/tag/<name>', methods=['DELETE'])
+@catch_err
+def del_tag(project, name):
+    count = _db.del_tag(project, name)
+    return jsonify(ok=True, project=project, name=name, count=count)
+
+
+@app.route('/api/<project>/tags', methods=['GET'])
+@catch_err
+def list_tags(project):
+    return jsonify(
+        ok=True,
+        project=project,
+        tags=list(_db.list_tags(project)),
+    )
+
+
+@app.route('/api/<project>/tag/<name>', methods=['GET'])
+@catch_err
+def get_tagged(project, name):
+    objs = _db.find_tagged(project, name)
+    return jsonify(
+        ok=True,
+        project=project,
+        tag=name,
+        objects=[db2dict(obj) for obj in objs],
     )
 
 

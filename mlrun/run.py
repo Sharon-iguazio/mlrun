@@ -282,10 +282,10 @@ def import_function(url='', secrets=None, db=''):
     """Import a function.
     
     Create a function object from a DB or from a YAML file that's read from
-    a local file or from a remote URL (such as HTTP(S), S3, Git, or the
-    Iguazio Data Science Platform)
+    a local file or from a remote URL (such as HTTP(S), AWS S3, Git, or the
+    Iguazio Data Science Platform).
 
-    :param url:      Local path or URL of a function-spec YAML file;
+    :param url:      Path or URL of a function-spec YAML file;
                      "db://<project>/<name>[:<tag>]" to read from the MLRun DB
 
     :param secrets:  [Optional] Credentials dictionary for accessing the import

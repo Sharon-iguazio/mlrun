@@ -29,6 +29,10 @@ def get_or_set_dburl(default=''):
 
 
 def get_run_db(url=''):
+    """Returns the MLRun database"""
+	# SLSL: I changed it from "Retruns the runtime database". "runtime database"
+	# is used only in one other location, in an internal comment in
+	# mlrun/execution.py. NOWNOW-RND
     if not url:
         url = get_or_set_dburl('./')
 
