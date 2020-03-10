@@ -1,4 +1,7 @@
-# example Kubernetes spec, should add volume for persisting data
+# Example MLRun Kubernetes Configuration
+# TODO: 
+# - Replace all `<...>` placeholders.
+# - Add a volume for persisting data (see `volumeMounts` and `volumes`).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,7 +36,7 @@ spec:
         - name: MLRUN_HTTPDB__DATA_VOLUME
           value: "/home/jovyan/data"
         - name: DEFAULT_DOCKER_REGISTRY
-          value: "<set default registry url>"
+          value: "<default Docker registry URL>"
         - name: DEFAULT_DOCKER_SECRET
           value: ""
         ports:

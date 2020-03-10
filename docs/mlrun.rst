@@ -1,4 +1,4 @@
-mlrun package
+mlrun Package
 =============
 
 Subpackages

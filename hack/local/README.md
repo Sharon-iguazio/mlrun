@@ -1,6 +1,9 @@
-# Install MLRun Locally
+# Running MLRun Locally
 
-This guide outlines the steps for installing MLRun locally.
+This guide outlines the steps for installing and running MLRun locally.
+
+> **Note:** Replace the `<namespace>` placeholder in all the commands in this guide with your cluster's Kubernetes namespace.
+<!-- SLSL: NOWNOW I added this note. -->
 
 #### In This Document
 
@@ -66,10 +69,7 @@ The following example uses a shared NFS server and a Helm chart for the installa
     kubectl apply -n <namespace> -f nfs-pvc.yaml
     ```
 
-> **Note:**
-> - Both the Jupyter and MLRun services use the path **/home/jovyan/data** to reference the data.
-> - Replace the `<namespace>` placeholder in all the commands with the name of your Kubernetes namespace.
-<!-- SLSL: NOWNOW I added this note. -->
+> **Note:** Both the Jupyter and MLRun services use the path **/home/jovyan/data** to reference the data.
 <!-- SLSL: NOWNOW Is this note specific to this section? It mentions the MLRun
   and Jupyter service, but we provide installation instructions for the MLRun
   API and Jupyter only in the next sections? Perhaps it was meant as a note to

@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Configuration system.
+MLRun Configuration
 
-Configuration can be in either a configuration file specified by
-MLRUN_CONFIG_FILE environment variable or by environmenet variables.
+Configuration can be done either from a configuration file specified by the
+MLRUN_CONFIG_FILE environment variable or by using environment variables.
 
-Environment variables are in the format "MLRUN_httpdb__port=8080". This will be
-mapped to config.httpdb.port. Values should be in JSON format.
+Environment variable names are of the following format:
+'"MLRUN_<config field>_<config field>=<value in JSON format>"'.
+For example 'MLRUN_httpdb__port=8080' is mapped to config.httpdb.port.
 """
+# SLSL: Do configuration files (MLRUN_CONFIG_FILE) also need to be JSON files?
+# "MLRUN_CONFIG_FILE" isn't used anywhere in the mlrun/mlrun repo?! NOWNOW
 
 import json
 import os
@@ -75,7 +78,7 @@ class Config:
 
     def __init__(self, cfg=None):
         cfg = {} if cfg is None else cfg
-        # Can't use self._cfg = cfg → infinite recursion
+        # Cannot use self._cfg = cfg => infinite recursion
         object.__setattr__(self, '_cfg', cfg)
 
     def __getattr__(self, attr):
@@ -155,7 +158,7 @@ def _convert_str(value, typ):
     if typ is bool:
         return strtobool(value)
 
-    # e.g. int('8080') → 8080
+    # For example, int('8080') => 8080
     return typ(value)
 
 
@@ -172,14 +175,14 @@ def read_env(env=None, prefix=env_prefix):
         except ValueError:
             pass  # Leave as string
         key = key[len(env_prefix):]  # Trim MLRUN_
-        path = key.lower().split('__')  # 'A__B' → ['a', 'b']
+        path = key.lower().split('__')  # 'A__B' => ['a', 'b']
         cfg = config
         while len(path) > 1:
             name, *path = path
             cfg = cfg.setdefault(name, {})
         cfg[path[0]] = value
 
-    # check for mlrun-api or db kubernetes service
+    # Check for an MLRun database/API Kubernetes service
     svc = env.get('MLRUN_API_PORT', env.get('MLRUN_DB_PORT'))
     if svc and not config.get('dbpath'):
         config['dbpath'] = 'http://' + urlparse(svc).netloc

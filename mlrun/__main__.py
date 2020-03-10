@@ -47,31 +47,64 @@ def main():
     pass
 
 
+# `run` Command
 @main.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("url", type=str, required=False)
 @click.option('--param', '-p', default='', multiple=True,
-              help="parameter name and value tuples, e.g. -p x=37 -p y='text'")
-@click.option('--inputs', '-i', multiple=True, help='input artifact')
-@click.option('--outputs', '-o', multiple=True, help='output artifact/result for kfp')
-@click.option('--in-path', help='default input path/url (prefix) for artifact')
-@click.option('--out-path', help='default output path/url (prefix) for artifact')
-@click.option('--secrets', '-s', multiple=True, help='secrets file=<filename> or env=ENV_KEY1,..')
-@click.option('--uid', help='unique run ID')
-@click.option('--name', help='run name')
-@click.option('--workflow', help='workflow name/id')
-@click.option('--project', help='project name/id')
-@click.option('--db', default='', help='save run results to path or DB url')
-@click.option('--runtime', '-r', default='', help='function spec dict, for pipeline usage')
-@click.option('--kfp', is_flag=True, help='running inside Kubeflow Piplines, do not use')
+              help="Parameter name and value tuples; for example,"
+              "`-p x=37 -p y='text'`")
+@click.option('--inputs', '-i', multiple=True,
+              help='Path/URL for getting input artifacts')
+@click.option('--outputs', '-o', multiple=True,
+              help='Output run artifacts and results for Kubeflow Pipelines')
+@click.option('--in-path',
+              help='Default directory path/URL for retrieving input artifacts')
+@click.option('--out-path',
+              help='Default directory path/URL for storing output artifacts')
+              # SLSL: What does the "(prefix)" for the above 2 commands mean?
+              # Remember to make any edits also in examples/remote.md.
+@click.option('--secrets', '-s', multiple=True,
+              help='Secrets, either as `file=<filename>` or `env=<ENVAR>,...`')
+              # SLSL: Edited - confirm. Secrets for what? NOWNOW-RND
+              # (I asked Haviv about this on Slack on 8.3.20.)
+              # Remember to also edit in examples/remote.md.
+@click.option('--uid',
+              help='Unique run ID')
+@click.option('--name',
+              help='Run name')
+              # SLSL: The original `run` help output in examples/remote.md as
+              # "optional run name", but there was no optional indication here
+              # and as I think the correct way to mark optional options is with
+              # [Optional] at the start, as we did elsewhere, but we don't do
+              # this for other optional `run` options, I didn't add it.
+              # NOWNOW-RND
+@click.option('--workflow',
+              help='Workflow name or ID')
+@click.option('--project',
+              help='Project name or ID')
+@click.option('--db', default='',
+              help='DB path or DB/API service URL for saving run information')
+@click.option('--runtime', '-r', default='',
+              help='Function-spec dictionary, for pipeline usage')
+@click.option('--kfp', is_flag=True,
+              help='Running inside Kubeflow Pipelines; DO NOT USE')
 @click.option('--hyperparam', '-x', default='', multiple=True,
-              help='hyper parameters (will expand to multiple tasks) e.g. --hyperparam p2=[1,2,3]')
-@click.option('--param-file', default='', help='path to csv table of execution (hyper) params')
-@click.option('--selector', default='', help='how to select the best result from a list, e.g. max.accuracy')
-@click.option('--func-url', '-f', default='', help='path/url of function yaml or function '
-                                                   'yaml or db://<project>/<name>[:tag]')
-@click.option('--task', default='', help='path/url to task yaml')
-@click.option('--handler', default='', help='invoke function handler inside the code file')
-@click.option('--mode', help='special run mode noctx | pass')
+              help='Hyperparameters (will expand to multiple tasks); '
+              'for example, `--hyperparam p2=[1,2,3]`')
+@click.option('--param-file', default='',
+              help='Path to CSV table of execution parameters/hyperparameters')
+@click.option('--selector', default='',
+              help='How to select the best result from a list; for example, '
+              'max.accuracy')
+@click.option('--func-url', '-f', default='',
+              help='Path/URL of a YAML function-configuration file, or '
+              'db://<project>/<name>[:tag] for a DB function object')
+@click.option('--task', default='',
+              help='Path/URL of a YAML task-configuration file')
+@click.option('--handler', default='',
+              help='Invoke the function handler inside the code file')
+@click.option('--mode',
+              help='Special run mode: "noctx" | "pass"')
 @click.option('--schedule', help='cron schedule')
 @click.option('--from-env', is_flag=True, help='read the spec from the env var')
 @click.option('--dump', is_flag=True, help='dump run results as YAML')
@@ -121,7 +154,7 @@ def run(url, param, inputs, outputs, in_path, out_path, secrets, uid,
                 with open(url) as fp:
                     body = fp.read()
                 based = b64encode(body.encode('utf-8')).decode('utf-8')
-                logger.info('packing code at {}'.format(url))
+                logger.info('Packing code at {}'.format(url))
                 update_in(runtime, 'spec.build.functionSourceCode', based)
                 url = ''
                 update_in(runtime, 'spec.command', '')
@@ -181,25 +214,51 @@ def run(url, param, inputs, outputs, in_path, out_path, secrets, uid,
         exit(1)
 
 
+# `build` Command
 @main.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("func_url", type=str, required=False)
-@click.option('--name', help='function name')
-@click.option('--project', help='project name')
-@click.option('--tag', default='', help='function tag')
-@click.option('--image', '-i', help='target image path')
+@click.option('--name',
+              help='Function name')
+@click.option('--project',
+              help='Project name')
+@click.option('--tag', default='',
+              help='Function tag')
+@click.option('--image', '-i',
+              help='Target image path')
 @click.option('--source', '-s', default='',
-              help='location/url of the source files dir/tar')
-@click.option('--base-image', '-b', help='base docker image')
+              help="Path/URL of the function source code - a PY file, or a '
+              'directory to archive\n                         '
+              'when using the -a|--archive option (default: './')")
+              # SLSL: Edited, here and in examples/remote.md.
+              # TODO: Verify the use of "\n" and the spaces at the start of the
+              # 2nd outline line. 
+              # NOWNOW-RND
+@click.option('--base-image', '-b', help='Base Docker image')
 @click.option('--command', '-c', default='', multiple=True,
-              help="build commands, e.g. '-c pip install pandas'")
-@click.option('--secret-name', default='', help='container registry secret name')
-@click.option('--archive', '-a', default='', help='destination archive for code (tar)')
-@click.option('--silent', is_flag=True, help='do not show build logs')
-@click.option('--with-mlrun', is_flag=True, help='add MLRun package')
-@click.option('--db', default='', help='save run results to path or DB url')
-@click.option('--runtime', '-r', default='', help='function spec dict, for pipeline usage')
-@click.option('--kfp', is_flag=True, help='running inside Kubeflow Piplines, do not use')
-@click.option('--skip', is_flag=True, help='skip if already deployed')
+              help="Build commands; for example, "
+              "'-c pip install pandas'")
+@click.option('--secret-name', default='',
+              help='Name of a container-registry secret')
+@click.option('--archive', '-a', default='',
+              help='Path to a TAR archive file to create from the function '
+              'sources (see -s|--source)\n                         '
+              'and extract to the function container during the build')
+              # SLSL: Edited, here and in examples/remote.md.
+              # TODO: Verify the use of "\n" and the spaces at the start of the
+              # 2nd outline line. 
+              # NOWNOW-RND
+@click.option('--silent', is_flag=True,
+              help="Don't show build logs")
+@click.option('--with-mlrun', is_flag=True,
+              help="Add the MLRun package ('mlrun')")
+@click.option('--db', default='',
+              help='Save run results to path or DB URL')
+@click.option('--runtime', '-r', default='',
+              help='Function spec dictionary, for pipeline usage')
+@click.option('--kfp', is_flag=True,
+              help='Running inside Kubeflow Pipelines; DO NOT USE')
+@click.option('--skip', is_flag=True,
+              help='Skip if already deployed')
 def build(func_url, name, project, tag, image, source, base_image, command,
           secret_name, archive, silent, with_mlrun, db, runtime, kfp, skip):
     """Build a container image from code and requirements."""
@@ -238,36 +297,36 @@ def build(func_url, name, project, tag, image, source, base_image, command,
 
     if source.endswith('.py'):
         if not path.isfile(source):
-            print('source file doesnt exist ({})'.format(source))
+            print("Source file doesn't exist ({})".format(source))
             exit(1)
         with open(source) as fp:
             body = fp.read()
         based = b64encode(body.encode('utf-8')).decode('utf-8')
-        logger.info('packing code at {}'.format(source))
+        logger.info('Packing code at "{}"'.format(source))
         b.functionSourceCode = based
         func.spec.command = ''
     else:
         b.source = source or b.source
-        # todo: upload stuff
+        # TODO: Upload stuff
 
     archive = archive or mlconf.default_archive
     if archive:
         src = b.source or './'
-        logger.info('uploading data from {} to {}'.format(src, archive))
+        logger.info('Uploading data from {} to {}'.format(src, archive))
         target = archive if archive.endswith('/') else archive + '/'
         target += 'src-{}-{}-{}.tar.gz'.format(meta.project, meta.name,
                                                meta.tag or 'latest')
         upload_tarball(src, target)
-        # todo: replace function.yaml inside the tar
+        # TODO: Replace function.yaml inside the tar
         b.source = target
 
     if hasattr(func, 'deploy'):
-        logger.info('remote deployment started')
+        logger.info('Remote deployment started')
         try:
             func.deploy(with_mlrun=with_mlrun, watch=not silent,
                         is_kfp=kfp, skip_deployed=skip)
         except Exception as err:
-            print('deploy error, {}'.format(err))
+            print('Deploy error: {}'.format(err))
             exit(1)
 
         if kfp:
@@ -278,30 +337,49 @@ def build(func_url, name, project, tag, image, source, base_image, command,
             full_image = func.full_image_path(image) or ''
             with open('/tmp/image', 'w') as fp:
                 fp.write(full_image)
-            print('function built, state={} image={}'.format(state, full_image))
+            print('Function built, state="{}" image="{}"'
+                  .format(state, full_image))
     else:
-        print('function does not have a deploy() method')
+        print("Function doesn't have a deploy() method")
         exit(1)
 
 
+# `deploy` Command
 @main.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("spec", type=str, required=False)
-@click.option('--source', '-s', default='', help='location/url of the source')
-@click.option('--dashboard', '-d', default='', help='nuclio dashboard url')
-@click.option('--project', '-p', default='', help='container registry secret name')
-@click.option('--model', '-m', multiple=True, help='input artifact')
-@click.option('--kind', '-k', default=None, help='runtime sub kind')
-@click.option('--tag', default='', help='version tag')
-@click.option('--env', '-e', multiple=True, help='environment variables')
-@click.option('--verbose', is_flag=True, help='verbose log')
+@click.option('--source', '-s', default='',
+              help='Location/URL of the sources to deploy')
+@click.option('--dashboard', '-d', default='',
+              help='Nuclio dashboard URL')
+@click.option('--project', '-p', default='',
+              help='Name of a container-registry secret')
+              # SLSL: How is the description related to the flag name?!
+              # Perhaps it was copied by mistake from the --secret-name flag?
+              # (I've now edited the description in both locations and the
+              # copy of the --secret-name doc in examples/remote.md.)
+              # NOWNOWNOW-RND
+@click.option('--model', '-m', multiple=True,
+              help='Input artifact')
+              # SLSL: I changed to "artifacts" (plural).
+              # Why is the flag named --model?
+              # NOWNOW-RND
+@click.option('--kind', '-k', default=None,
+              help='Runtime sub kind')
+@click.option('--tag', default='',
+              help='Version tag')
+@click.option('--env', '-e', multiple=True,
+              help='Environment variables')
+@click.option('--verbose', is_flag=True,
+              help='Verbose log')
 def deploy(spec, source, dashboard, project, model, tag, kind, env, verbose):
-    """Deploy model or function"""
+    """Deploy a model or function."""
     if spec:
         runtime = py_eval(spec)
     else:
         runtime = {}
     if not isinstance(runtime, dict):
-        print('runtime parameter must be a dict, not {}'.format(type(runtime)))
+        print('Runtime parameter must be of type dict, not {}'
+              .format(type(runtime)))
         exit(1)
 
     f = RemoteRuntime.from_dict(runtime)
@@ -323,35 +401,51 @@ def deploy(spec, source, dashboard, project, model, tag, kind, env, verbose):
         print('deploy error: {}'.format(err))
         exit(1)
 
-    print('function deployed, address={}'.format(addr))
+    print('Function deployed, address={}'.format(addr))
     with open('/tmp/output', 'w') as fp:
         fp.write(addr)
 
 
+# `watch` Command
 @main.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument("pod", type=str)
-@click.option('--namespace', '-n', help='kubernetes namespace')
+@click.option('--namespace', '-n',
+              help='Kubernetes namespace')
 @click.option('--timeout', '-t', default=600, show_default=True,
-              help='timeout in seconds')
+              help='Timeout period, in seconds')
 def watch(pod, namespace, timeout):
     """Read current or previous task (pod) logs."""
     k8s = K8sHelper(namespace)
     status = k8s.watch(pod, namespace, timeout)
-    print('Pod {} last status is: {}'.format(pod, status))
+    print('Last status of pod {} is "{}"'.format(pod, status))
 
 
+# `get` Command
 @main.command(context_settings=dict(ignore_unknown_options=True))
 @click.argument('kind', type=str)
 @click.argument('name', type=str, default='', required=False)
-@click.option('--selector', '-s', default='', help='label selector')
-@click.option('--namespace', '-n', help='kubernetes namespace')
-@click.option('--uid', help='unique ID')
-@click.option('--project', help='project name')
-@click.option('--tag', '-t', default='', help='artifact/function tag')
-@click.option('--db', help='db path/url')
+@click.option('--selector', '-s', default='',
+              help='Label selector')
+@click.option('--namespace', '-n',
+              help='Kubernetes namespace')
+@click.option('--uid',
+              help='Unique ID')
+              # SLSL: UID of what? The project?
+              # Note that other --project flags are described as project
+              # name/ID, but the `watch` --project flag below is described only
+              # as "Project name"?
+              # NOWNOW-RND
+@click.option('--project',
+              help='Project name')
+@click.option('--tag', '-t', default='',
+              help='Artifacts/function tag')
+@click.option('--db',
+              help='Path to the MLRun DB/API service')
+
 @click.argument('extra_args', nargs=-1, type=click.UNPROCESSED)
 def get(kind, name, selector, namespace, uid, project, tag, db, extra_args):
-    """List/get one or more object per kind/class."""
+    """List/get one or more objects for a specific kind (class)."""
+
     if kind.startswith('po'):
         k8s = K8sHelper(namespace)
         if name:
@@ -416,12 +510,13 @@ def get(kind, name, selector, namespace, uid, project, tag, db, extra_args):
         print('Currently, only get pods | runs | artifacts | func [name] are supported.')
 
 
+# `db` Command
 @main.command()
 @click.option('--port', '-p', help='Port to listen on', type=int)
 @click.option('--dirpath', '-d',
               help='Path to the MLRun DB/API service directory')
 def db(port, dirpath):
-    """Run an MLRun database/HTTP API service"""
+    """Run an MLRun database/HTTP API service."""
     env = environ.copy()
     if port is not None:
         env['MLRUN_httpdb__port'] = str(port)
@@ -436,20 +531,27 @@ def db(port, dirpath):
 # SLSL: NOWNOW I edited the description from "Run HTTP api/database server".
 
 
+# `version` Command
 @main.command()
 def version():
-    """get mlrun version"""
+    """Get the MLRun version."""
+
     print('MLRun version: {}'.format(get_version()))
 
 
+# `logs` Command
 @main.command()
 @click.argument('uid', type=str)
-@click.option('--project', '-p', help='project name')
-@click.option('--offset', type=int, default=0, help='byte offset')
-@click.option('--db', help='api and db service path/url')
+@click.option('--project', '-p',
+              help='Project name')
+@click.option('--offset', type=int, default=0,
+              help='Byte offset')
+@click.option('--db',
+              help='Path or URL of the MLRun database/API service')
 @click.option('--watch', '-w', is_flag=True, help='watch/follow log')
 def logs(uid, project, offset, db, watch):
-    """Get or watch task logs"""
+    """Get or view task logs."""
+
     mldb = get_run_db(db or mlconf.dbpath).connect()
     if mldb.kind == 'http':
         state = mldb.watch_log(uid, project, watch=watch, offset=offset)
@@ -462,22 +564,35 @@ def logs(uid, project, offset, db, watch):
         print('final state: {}'.format(state))
 
 
+# `project` Command
 @main.command()
 @click.argument('context', type=str)
-@click.option('--name', '-n', help='project name')
-@click.option('--url', '-u', help='remote git or archive url')
-@click.option('--run', '-r', help='run workflow name ot .py file')
-@click.option('--arguments', '-a', help='arguments dict')
-@click.option('--artifact-path', '-p', help='output artifacts path')
-@click.option('--namespace', help='k8s namespace')
-@click.option('--db', help='api and db service path/url')
-@click.option('--init-git', is_flag=True, help='for new projects init git context')
-@click.option('--clone', '-c', is_flag=True, help='force override/clone the context dir')
-@click.option('--sync', is_flag=True, help='sync functions into db')
-@click.option('--dirty', '-d', is_flag=True, help='allow git with uncommited changes')
+@click.option('--name', '-n',
+              help='project name')
+@click.option('--url', '-u',
+              help='Remote Git or archive URL')
+@click.option('--run', '-r',
+              help='Name of the run-workflow PY file')
+@click.option('--arguments', '-a',
+              help='Arguments dictionary')
+@click.option('--artifact-path', '-p',
+              help='Path for storing output artifacts')
+@click.option('--namespace',
+              help='Kubernetes namespace')
+@click.option('--db',
+              help='Path or URL of the MLRun database/API service')
+@click.option('--init-git', is_flag=True,
+              help='Git initialization context for new projects')
+@click.option('--clone', '-c', is_flag=True,
+              help='Force overriding/cloning of the context directory')
+@click.option('--sync', is_flag=True,
+              help='Synchronize functions into the DB')
+              # SLSL: What does "sync functions into db" means?! NOWNOW-RND
+@click.option('--dirty', '-d', is_flag=True,
+              help='Allow using Git files with uncommitted changes')
 def project(context, name, url, run, arguments, artifact_path,
             namespace, db, init_git, clone, sync, dirty):
-    """load and/or run a project"""
+    """Load and/or run an MLRun project."""
     if db:
         mlconf.dbpath = db
 
@@ -501,26 +616,28 @@ def project(context, name, url, run, arguments, artifact_path,
                       .format(arguments))
                 exit(1)
 
-        print('running workflow {} file: {}'.format(run, workflow_path))
+        print('Running workflow "{}", file "{}"'.format(run, workflow_path))
         run = proj.run(run, workflow_path, arguments=args,
                        artifact_path=artifact_path, namespace=namespace,
                        sync=sync, dirty=dirty)
         print('run id: {}'.format(run))
 
     elif sync:
-        print('saving project functions to db ..')
+        print('Saving project functions to DB ...')
         proj.sync_functions(save=True)
 
 
+# `clean` Command
 @main.command()
-@click.option('--api', help='api and db service path/url')
+@click.option('--api',
+              help='Path to the MLRun DB/API service')
 @click.option('--namespace', '-n', help='kubernetes namespace')
 @click.option('--pending', '-p', is_flag=True,
-              help='clean pending pods as well')
+              help='Clean pending pods as well')
 @click.option('--running', '-r', is_flag=True,
               help='clean running pods as well')
 def clean(api, namespace, pending, running):
-    """Clean completed or failed pods/jobs"""
+    """Clean completed or failed pods/jobs."""
     k8s = K8sHelper(namespace)
     #mldb = get_run_db(db or mlconf.dbpath).connect()
     items = k8s.list_pods(namespace)
@@ -533,7 +650,7 @@ def clean(api, namespace, pending, running):
     for i in items:
         task = i.metadata.labels.get('mlrun/class', '')
         state = i.status.phase
-        # todo: clean mpi, spark, .. jobs (+CRDs)
+        # TODO: Clean MPI, Spark, ... jobs (+ CRDs)
         if task and task in ['build', 'job', 'dask'] and state in states:
             name = i.metadata.name
             start = ''
@@ -543,10 +660,14 @@ def clean(api, namespace, pending, running):
             k8s.del_pod(name)
 
 
+# `config` Command
 @main.command(name='config')
 def show_config():
-    """Show configuration & exit"""
+    """Show configuration and exit."""
     print(mlconf.dump_yaml())
+
+
+## Internal Functions
 
 
 def fill_params(params):
@@ -558,7 +679,7 @@ def fill_params(params):
         key, value = param[:i].strip(), param[i + 1:].strip()
         if key is None:
             raise ValueError(
-                'cannot find param key in line ({})'.format(param))
+                'Cannot find parameter key in line ({})'.format(param))
         params_dict[key] = py_eval(value)
     return params_dict
 
@@ -606,5 +727,7 @@ def dict_to_str(struct: dict):
     return ','.join(['{}={}'.format(k, v) for k, v in struct.items()])
 
 
+# Execute the main function
 if __name__ == "__main__":
     main()
+

@@ -117,15 +117,15 @@ def mlrun_op(name: str = '', project: str = '', function=None, func_url=None,
              selector: str = '', inputs: dict = None, outputs: list = None,
              in_path: str = '', out_path: str = '', rundb: str = '',
              mode: str = '', handler: str = '', more_args: list = None):
-    """mlrun KubeFlow pipelines operator, use to form pipeline steps
+    """MLRun Kubeflow Pipelines operator for forming pipeline steps
 
-    when using kubeflow pipelines, each step is wrapped in an mlrun_op
-    one step can pass state and data to the next step, see example below.
+    When using Kubeflow Pipelines, each step is wrapped in an mlrun_op call.
+    One step can pass state and data to the next step. See example below.
 
     :param name:    name used for the step
     :param project: optional, project name
     :param image:   optional, run container image (will be executing the step)
-                    the container should host all requiered packages + code
+                    the container should host all required packages + code
                     for the run, alternatively user can mount packages/code via
                     shared file volumes like v3io (see example below)
     :param function: optional, function object

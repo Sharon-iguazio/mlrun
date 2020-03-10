@@ -42,7 +42,7 @@ from .config import config as mlconf
 def run_pipeline(pipeline, arguments=None, experiment=None, run=None,
                  namespace=None, artifact_path=None, ops=None,
                  url=None, remote=False):
-    """Run an ML pipeline using Kubeflow Pipelines (KFP)
+    """Run an ML pipeline using Kubeflow Pipelines (KFP).
 
     Submit a workflow task to KFP using the MLRun API service.
 
@@ -51,7 +51,7 @@ def run_pipeline(pipeline, arguments=None, experiment=None, run=None,
     :param experiment Experiment name
     :param run        [Optional] Run name
     :param namespace  [Optional] Kubernetes namespace; None (default) to use
-                       default namespace
+                      the default namespace
     :param url        [Optional] URL of an MLRun API service
     :param artifact_path A local path or URL for storing pipeline artifacts
     :param ops        [Optional] Operators to apply to all pipeline functions
@@ -91,7 +91,11 @@ def run_pipeline(pipeline, arguments=None, experiment=None, run=None,
 
 
 def get_pipline(run_id, wait=0, namespace=None):
-    """Get or wait for Pipeline status, wait time in sec"""
+    """Get the status of a pipeline.
+    
+    Optionally set `wait` to the duration to wait for the status, in seconds."""
+    # SLSL: I edited the description, but I think the second sentence should
+    # be replaced with parameters doc for all the parameters. NOWNOW-RND
 
     client = Client(namespace=namespace or mlconf.namespace)
     if wait:
@@ -103,26 +107,28 @@ def get_pipline(run_id, wait=0, namespace=None):
 
 def run_local(task, command='', name: str = '', args: list = None,
               workdir=None, project: str = '', tag: str = '', secrets=None):
-    """Run a task on function/code (.py, .ipynb or .yaml) locally,
+    """Run a task on function or code (PY, IPYNB, or YAML file) locally.
 
-    e.g.:
-           # define a task
+    For example:
+           # Define a task
            task = NewTask(params={'p1': 8}, out_path=out_path)
 
-           # run
+           # Run
            run = run_local(spec, command='src/training.py', workdir='src')
 
-    :param task:     task template object or dict (see RunTemplate)
-    :param command:  command/url/function
-    :param name:     ad hook function name
-    :param args:     command line arguments (override the ones in command)
-    :param workdir:  working dir to exec in
-    :param project:  function project (none for 'default')
-    :param tag:      function version tag (none for 'latest')
-    :param secrets:  secrets dict if the function source is remote (s3, v3io, ..)
+    :param task:     Task template object or dict (see RunTemplate)
+    :param command:  Command/URL/function
+    :param name:     Ad-hoc function name
+    :param args:     Command-line arguments (overrides `command` arguments)
+    :param workdir:  Working directory from which to execute the code
+    :param project:  Function project (none for 'default')
+    :param tag:      Function version tag (none for 'latest')
+    :param secrets:  Secrets dict if the function source is remote (s3, v3io, ..)
 
-    :return: run object
+    :return: Run object
     """
+    # SLSL: The original description referred to "function/code". I changed it
+    # to "function or code" but should it be "function code" instead? NOWNOW-RND
 
     if command and isinstance(command, str):
         sp = command.split()
@@ -185,7 +191,7 @@ def get_or_create_ctx(name: str,
                       spec=None,
                       with_env: bool = True,
                       rundb: str = ''):
-    """ Called from within the user program to obtain a run context
+    """Obtain a run context from within the user program.
 
     The run context is an interface for receiving parameters and data and
     logging run results. The context is read from the event, spec, or
@@ -200,7 +206,7 @@ def get_or_create_ctx(name: str,
     :param event:    Nuclio event object that represents an MLRun function
     :param spec:     Dictionary containing the run specification
     :param with_env: True (default) - look for context in environment variables
-    :param rundb:    Path or URL of the MLRun database
+    :param rundb:    Path or URL of the MLRun database/API service
 
     :return: Execution context
 
@@ -273,7 +279,7 @@ def get_or_create_ctx(name: str,
 
 
 def import_function(url='', secrets=None, db=''):
-    """Import a function
+    """Import a function.
     
     Create a function object from a DB or from a YAML file that's read from
     a local file or from a remote URL (such as HTTP(S), S3, Git, or the
@@ -284,7 +290,7 @@ def import_function(url='', secrets=None, db=''):
 
     :param secrets:  [Optional] Credentials dictionary for accessing the import
                      DB or URL (S3, Iguazio Data Science Platform, etc.)
-    :param db        [Optional] Path or URL of the MLRun database
+    :param db        [Optional] Path or URL of the MLRun database/API service
 
     :return: A function object
     """
@@ -304,7 +310,7 @@ def import_function(url='', secrets=None, db=''):
 
 
 def import_function_to_dict(url, secrets=None):
-    """Load a function specification from a local or a remote YAML file"""
+    """Load a function specification from a local or a remote YAML file."""
     # SLSL: I added the parameter descriptions. Is it only intended as an
     # internal file for use from import_function()?
 
@@ -352,7 +358,7 @@ def new_function(name: str = '', project: str = '', tag: str = '',
                  kind: str = '', command: str = '', image: str = '',
                  args: list = None, runtime=None,
                  mode=None, kfp=None):
-    """Create a new ML function from base properties
+    """Create a new ML function from base properties.
 
     For example:
            # Define a container-based function
@@ -454,7 +460,7 @@ def code_to_function(name: str = '', project: str = '', tag: str = '',
                      filename: str = '', handler='', runtime='', kind='',
                      image=None, code_output='', embed_code=True,
                      with_doc=False):
-    """Convert code or a web notebook to a function object with embedded code
+    """Convert code or a web notebook to a function object with embedded code.
 
     Code stored in the function spec and can be refreshed using `.with_code()`,
     eliminating the need to rebuild container images for each code edit.
@@ -487,8 +493,8 @@ def code_to_function(name: str = '', project: str = '', tag: str = '',
         return '{}:{}'.format(origin, name)
 
     if not embed_code and (not filename or filename.endswith('.ipynb')):
-        raise ValueError('a valid code file must be specified '
-                         'when not using the embed_code option')
+        raise ValueError('A valid code file must be specified when not using '
+                         'the `embed_code` option')
 
     subkind = kind[kind.find(':') + 1:] if kind.startswith('nuclio:') else None
     code_origin = add_name(add_code_metadata(filename), name)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# this file is based on the code from kubeflow pipelines git
+# This file is based on the code from the Kubeflow Pipelines Git repo.
 
 
 def mount_pvc(pvc_name='pipeline-claim', volume_name='pipeline', volume_mount_path='/mnt/pipeline'):

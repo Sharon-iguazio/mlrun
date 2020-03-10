@@ -1,4 +1,9 @@
-# example Kubernetes spec, should add volume for persisting data
+# Example MLRun Kubernetes Configuration
+# TODO: 
+# - Replace all `<...>` placeholders.
+# - Add a volume for persisting data (see `volumeMounts` and `volumes`).
+# - For the Iguazio Data Science Platform, env V3IO_USERNAME and volumes subPath
+#   should be set to a username with MLRun admin privileges (default: "admin").
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,27 +36,31 @@ spec:
         - name: MLRUN_HTTPDB__DIRPATH
           value: "/mlrun/db"
         - name: DEFAULT_DOCKER_REGISTRY
-          value: "<set default registry url>"
+          value: "<default Docker registry URL>"
         - name: V3IO_ACCESS_KEY
-          value: <access-key>
+          value: <access key>
         - name: V3IO_USERNAME
           value: admin
         ports:
         - containerPort: 8080
         command: ["python", "-m", "mlrun", "db"]
         args: []
-# UNCOMMENT TO ADD V3IO VOLUME + SET ACCESS KEY
-#        volumeMounts:
-#        - mountPath: /mlrun/db
-#          name: fs
-#      volumes:
-#      - flexVolume:
-#          driver: v3io/fuse
-#          options:
-#            accessKey: <access-key>
-#            container: users
-#            subPath: /admin
-#        name: fs
+# TODO: Uncomment the following to add an Iguazio Data Science Platform
+# persistent-data volume using the v3io mount. Replace `<access key>` with a
+# platform access key, and if necessary, replace "admin" in `subPath` with the
+# name of an admin user for the MLRun service
+# configured also in template.spec.containers.env):
+#       volumeMounts:
+#       - mountPath: /mlrun/db
+#         name: fs
+#     volumes:
+#     - flexVolume:
+#         driver: v3io/fuse
+#         options:
+#           accessKey: <access key>
+#           container: users
+#           subPath: /admin
+#       name: fs
       serviceAccountName: mlrun-api
 ---
 kind: Service
