@@ -6,8 +6,8 @@ This tutorial explains how to use MLRun from a local development environment (ID
 
 - [Prerequisites](#prerequisites)
 - [CLI Commands](#cli-commands)
-  [The `build` Command](#cli-cmd-build)
-  [The `run` Command](#cli-run-build)
+  - [The `build` Command](#cli-cmd-build)
+  - [The `run` Command](#cli-cmd-run)
 - [Building and Running a Function from a Git Repository](#git-func)
 - [Using a Sources Archive](#sources-archive)
 
