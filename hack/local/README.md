@@ -1,4 +1,4 @@
-# Running MLRun Locally
+# Installing and Running MLRun Locally
 
 This guide outlines the steps for installing and running MLRun locally.
 
@@ -21,7 +21,12 @@ To use MLRun with your local Docker registry, run the MLRun API service, dashboa
 
 > **Note:**
 > - You must provide valid paths for the shared data directory and the local host IP.
+> - Both the Jupyter and MLRun services use the path **/home/jovyan/data** within the shared directory to reference the data.
 > - Using Docker is limited to local runtimes.
+<!-- SLSL: I moved the info in the second note from the end of the shared
+  volume (NFS) installation section and rephrased (including adding the
+  shared-directory reference), because user jovyan is referenced in the
+  following commands - for the Jupyter and MLRun API services. NOWNOWNOW-RND -->
 
 ```
 SHARED_DIR=/home/me/data
@@ -39,19 +44,18 @@ docker run -it -p 8888:8888 --rm -d --name jupy -v $(SHARED_DIR}:/home/jovyan/da
 
 When the execution completes &mdash;
 
-- Open Jupyter Notebook on port 8888 and run the code in the **examples/mlrun_basics.ipynb** notebook.
+- Open Jupyter Notebook on port 8888 and run the code in the [**examples/mlrun_basics.ipynb**](/examples/mlrun_basics.ipynb) notebook.
 - Use the MLRun dashboard on port 4000.
 
 <a id="k8s-cluster"></a>
 ## Install MLRun on a Kubernetes Cluster
 
-Perform the following steps to install and run MLRun on a Kubernetes cluster:
+Perform the following steps to install and run MLRun on a Kubernetes cluster.
+> **Note:** The outlined procedure allows using the local, job, and Dask runtimes.
+> To use the MPIJob (Horovod) or Spark runtimes, you need to install additional custom resource definitions (CRDs).
 
 - [Install shared volume storage (an NFS server provisioner)](#k8s-install-a-shared-volume-storage)
 - [Install the MLRun API and dashboard (UI) services](#k8s-install-mlrun-api-n-ui-services)
-
-> **Note:** The outlined procedure allows using the local, job, and Dask runtimes.
-> To use the MPIJob (Horovod) or Spark runtimes, you need to install additional custom resource definitions (CRDs).
 
 <a id="k8s-install-a-shared-volume-storage"></a>
 ### Install Shared Volume Storage (an NFS Server Provisioner)
@@ -64,17 +68,10 @@ The following example uses a shared NFS server and a Helm chart for the installa
     helm repo add stable https://kubernetes-charts.storage.googleapis.com/
     helm install stable/nfs-server-provisioner --name nfsprov
     ```
-2. Create a PVC for a shared NFS volume: copy the [**nfs-pvc.yaml**](nfs-pvc.yaml) file to you cluster and run the following command:
+2. Create a `PersistentVolumeClaim` (PVC) for a shared NFS volume: copy the [**nfs-pvc.yaml**](nfs-pvc.yaml) file to you cluster and run the following command:
     ```sh
     kubectl apply -n <namespace> -f nfs-pvc.yaml
     ```
-
-> **Note:** Both the Jupyter and MLRun services use the path **/home/jovyan/data** to reference the data.
-<!-- SLSL: NOWNOW Is this note specific to this section? It mentions the MLRun
-  and Jupyter service, but we provide installation instructions for the MLRun
-  API and Jupyter only in the next sections? Perhaps it was meant as a note to
-  preface these two sections, but if so this isn't clear because it's taken to
-  be part of the NFS section. -->
 
 <a id="k8s-install-mlrun-api-n-ui-services"></a>
 ### Install the MLRun API and Dashboard (UI) Services
@@ -103,14 +100,10 @@ To change or add packages, see the Jupyter Dockerfile ([**Dockerfile.jupy**](Doc
 <a id="k8s-install-start-working"></a>
 ### Start Working
 
-- Open Jupyter Notebook on NodePort `30040` and run the code in the **examples/mlrun_basics.ipynb** notebook.
+- Open Jupyter Notebook on NodePort `30040` and run the code in the [**examples/mlrun_basics.ipynb**](/examples/mlrun_basics.ipynb) notebook.
 - Use the dashboard at NodePort `30068`.
 
-You can change the ports by editing the YAML files.
-You can use `ingress` for better security.
-<!-- SLSL: NOWNOW
-- Is the ingress comment related to the ports comment and should `ingress`
-  indeed be formatted with inline code?
-- Can they also edit the ports for the local Docker installation?
--->
+> **Note:**
+> - You can change the ports by editing the YAML files.
+> - You can select to use a Kubernetes Ingress for better security.
 
