@@ -3,7 +3,6 @@
 This guide outlines the steps for installing and running MLRun locally.
 
 > **Note:** Replace the `<namespace>` placeholder in all the commands in this guide with your cluster's Kubernetes namespace.
-<!-- SLSL: NOWNOW I added this note. -->
 
 #### In This Document
 
@@ -23,10 +22,6 @@ To use MLRun with your local Docker registry, run the MLRun API service, dashboa
 > - You must provide valid paths for the shared data directory and the local host IP.
 > - Both the Jupyter and MLRun services use the path **/home/jovyan/data** within the shared directory to reference the data.
 > - Using Docker is limited to local runtimes.
-<!-- SLSL: I moved the info in the second note from the end of the shared
-  volume (NFS) installation section and rephrased (including adding the
-  shared-directory reference), because user jovyan is referenced in the
-  following commands - for the Jupyter and MLRun API services. NOWNOWNOW-RND -->
 
 ```
 SHARED_DIR=/home/me/data
