@@ -54,17 +54,31 @@ def main():
               help="Parameter name and value tuples; for example,"
               "`-p x=37 -p y='text'`")
 @click.option('--inputs', '-i', multiple=True,
-              help='Path/URL for getting input artifacts')
+              help='Input artifact; for example, '
+              '`-i infile.txt=s3://mybucket/infile.txt`')
 @click.option('--outputs', '-o', multiple=True,
-              help='Output run artifacts and results for Kubeflow Pipelines')
+              help='Output artifact (Kubeflow Pipelines run result)')
+              # SLSL: Rephrased. I wanted to add an example like I did for
+              # --inputs/-i, but I didn't find any in the mlrun repo.
+              # When is the user expected to pass an output artifact to the CLI?
+              # (Note that this wasn't included in the main CLI command examples
+              # in examples/remote.md, unlike the inputs flag.) NOWNOW-RND
 @click.option('--in-path',
-              help='Default directory path/URL for retrieving input artifacts')
+              help='Base directory path/URL for storing input artifacts')
 @click.option('--out-path',
-              help='Default directory path/URL for storing output artifacts')
-              # SLSL: What does the "(prefix)" for the above 2 commands mean?
+              help='Base directory path/URL for storing output artifacts')
+              # SLSL: I rephrased the in-path and out-path flags doc from
+              # "default input path/url (prefix) for artifact" and a similar
+              # output doc. I understood from Yaron that "prefix" refers to
+              # this being the root directory path for storing artifacts.
+              # I wasn't sure about the "default" indication, but it didn't seem
+              # to me that the user can override it after setting it in the CLI
+              # command and I suspect it was mean to convey a "base" dir path as
+              # well, so I removed it in my version. TODO: Verify. NOWNOW-RND
               # Remember to make any edits also in examples/remote.md.
 @click.option('--secrets', '-s', multiple=True,
-              help='Secrets, either as `file=<filename>` or `env=<ENVAR>,...`')
+              help='Secrets, either as `file=<filename>` or `env=<ENVAR>,...`;'
+              ' for example, `-s file=secrets.txt`')
               # SLSL: Edited - confirm. Secrets for what? NOWNOW-RND
               # (I asked Haviv about this on Slack on 8.3.20.)
               # Remember to also edit in examples/remote.md.
@@ -243,17 +257,17 @@ def run(url, param, inputs, outputs, in_path, out_path, secrets, uid,
 @click.option('--secret-name', default='',
               help='Name of a container-registry secret')
 @click.option('--archive', '-a', default='',
-              help='Path to a TAR archive file to create from the function '
-              'sources (see -s|--source)\n                         '
-              'and extract to the function container during the build')
-              # SLSL: Edited, here and in examples/remote.md.
-              # TODO: Verify the use of "\n" and the spaces at the start of the
-              # 2nd outline line. 
-              # NOWNOW-RND
+              help='  -a, --archive TEXT     Path/URL of a target '
+              'function-sources archive directory: as part of the\n'
+              '                       build, the function sources (see '
+              '-s|--source) are archived into a\n                       '
+              'TAR file and then extracted into the archive directory'
+              # SLSL: Edited, here and in examples/remote.md. NOWNOW-RND
 @click.option('--silent', is_flag=True,
               help="Don't show build logs")
 @click.option('--with-mlrun', is_flag=True,
-              help="Add the MLRun package ('mlrun')")
+              help='Add the MLRun package ("mlrun")')
+              # SLSL: What does it mean to add the mlrun package? NOWNOW-RND?
 @click.option('--db', default='',
               help='Save run results to path or DB URL')
 @click.option('--runtime', '-r', default='',
@@ -329,7 +343,7 @@ def build(func_url, name, project, tag, image, source, base_image, command,
             func.deploy(with_mlrun=with_mlrun, watch=not silent,
                         is_kfp=kfp, skip_deployed=skip)
         except Exception as err:
-            print('Deploy error: {}'.format(err))
+            print('Deployment error: {}'.format(err))
             exit(1)
 
         if kfp:
@@ -343,7 +357,7 @@ def build(func_url, name, project, tag, image, source, base_image, command,
             print('Function built, state="{}" image="{}"'
                   .format(state, full_image))
     else:
-        print("Function doesn't have a deploy() method")
+        print("Function doesn't have a `deploy` method")
         exit(1)
 
 
