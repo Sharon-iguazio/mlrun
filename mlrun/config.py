@@ -15,11 +15,11 @@
 MLRun Configuration
 
 Configuration can be done either from a configuration file specified by the
-MLRUN_CONFIG_FILE environment variable or by using environment variables.
+``MLRUN_CONFIG_FILE`` environment variable or by using environment variables.
 
-Environment variable names are of the following format:
-'"MLRUN_<config field>_<config field>=<value in JSON format>"'.
-For example 'MLRUN_httpdb__port=8080' is mapped to config.httpdb.port.
+| Environment variable names are of the following format:
+| ``MLRUN_<config field>_<config field>=<value in JSON format>``
+| For example ``MLRUN_httpdb__port=8080`` is mapped to ``config.httpdb.port``.
 """
 # SLSL: Do configuration files (MLRUN_CONFIG_FILE) also need to be JSON files?
 # "MLRUN_CONFIG_FILE" isn't used anywhere in the mlrun/mlrun repo?! NOWNOW
@@ -121,10 +121,11 @@ config = Config(default_config)
 
 
 def _populate():
-    """Populate configuration from config file (if exists in environment) and
-    from environment variables.
+    """Populate configuration from configuration file (if exist) and from
+    environment variables.
 
-    populate will run only once, after first call it does nothing.
+    The configuration information is populated only once.
+    The `_populate` method does nothing after the first call.
     """
     global _loaded
 
@@ -163,7 +164,7 @@ def _convert_str(value, typ):
 
 
 def read_env(env=None, prefix=env_prefix):
-    """Read configuration from environment"""
+    """Read configuration from environment variables."""
     env = os.environ if env is None else env
 
     config = {}
@@ -171,7 +172,7 @@ def read_env(env=None, prefix=env_prefix):
         if not key.startswith(env_prefix) or key == env_file_key:
             continue
         try:
-            value = json.loads(value)  # values can be JSON encoded
+            value = json.loads(value)  # Values can be JSON encoded
         except ValueError:
             pass  # Leave as string
         key = key[len(env_prefix):]  # Trim MLRUN_

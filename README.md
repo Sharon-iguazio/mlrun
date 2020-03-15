@@ -253,20 +253,19 @@ MLRun has the following main components, which are usually grouped into **"proje
       without an inputs/outputs distinction)?
       NOWNOWNOW-RND -->
 - <a id="def-artifact"></a>**Artifact** &mdash; versioned data artifacts (such as files, objects, data sets, and models) that are produced or consumed by functions, runs, and workflows.
-- <a id="def-workflow"></a>**Workflow** &mdash; defines a functions pipeline or directed acyclic graph (DAG) to execute (using Kubeflow Pipelines).
+- <a id="def-workflow"></a>**Workflow** &mdash; defines a functions pipeline or directed acyclic graph (DAG) to execute using Kubeflow Pipelines.
   <!-- SLSL: Verify my editing, including that both "pipeline" and the DAG
-    refer to functions.
-    I thought that at least theoretically, using KFP was only an option?
-    NOWNOWNOW-RND
-  -->
+    refer to functions. NOWNOWNOW-RND -->
 
 <a id="managed-and-portable-execution"></a>
 ### Managed and Portable Execution
 
-MLRun support multiple "runtimes" &mdash; computation frameworks &mdash; such as local, Kubernetes job, Dask, Nuclio, Spark, or MPI job (Horovod).
-Runtimes may support parallelism and clustering to distribute the work among processes/containers.
+MLRun supports various types of **"runtimes"** &mdash; computation frameworks such as local, Kubernetes job, Dask, Nuclio, Spark, or MPI job (Horovod).
+Runtimes may support parallelism and clustering to distribute the work among multiple workers (processes/containers).
 
-Example
+The following code example creates a task that defines a run specification &mdash; including the run parameters, inputs, and secrets.
+You run the task on a "job" function, and print the result output (in this case, the "model" artifact) or watch the run's progress.
+For more information and examples, see the [**examples/mlrun_basics.ipynb**](examples/mlrun_basics.ipynb) notebook.
 ```python
 # Create a task and set its attributes
 task = NewTask(handler=handler, name='demo', params={'p1': 5})
@@ -278,34 +277,54 @@ run.show()
 print(run.artifact('model'))
 ```
 
-In this example, the task defines your run spec (parameters, inputs, secrets, etc.).
-You run the task on a **"job"** function, and print the result output (in this case, the **"model"** artifact) or watch the progress of that run.
-See the [docs and example notebook](examples/mlrun_basics.ipynb).
+You can run the same [task](#def-task) on different functions &mdash; enabling code portability, re-use, and AutoML &mdash; and you can also use the same [function](#def-function) to run different tasks or parameter combinations with minimal coding effort.
 
-You can run the same **"task"** on different functions &mdash; enabling code portability, re-use, and AutoML &mdash; or you can use the same **"function"** to run different tasks or parameter combinations with minimal coding effort.
+Moving from local notebook execution to remote execution &mdash; such as running a container job, a scaled-out framework, or an automated workflow engine like Kubeflow &mdash; is seamless: just swap the runtime function or wire functions in a graph.
+Continuous build integration and deployment (CI/CD) steps can also be configured as part of the workflow, using the `deploy_step` function method.
+<!-- SLSL: I removed "; [see this tutorial for details]()" at the end of the
+  first sentence, as it didn't link to any tutorial.
+  I also made other edits, including changing "runtime/function" to "runtime
+  function"?
+  I'm not sure what "wire functions in a graph" means?
+  "`.deploy_step()` function methods" > "`deploy_step` function method".
+  NOWNOW-RND -->
 
-Moving from run on a local notebook, to running in a container job, a scaled-out framework, or an automated workflow engine like Kubeflow is seamless, just swap the runtime/function or wire functions in a graph; [see this tutorial for details]().
-CI/CD steps (build, deploy) can also be specified as part of the workflow (using `.deploy_step()` function methods).
+Functions (function objects) can be created using one of three methods:
 
-Functions can be created using one of three methods:
+- **`new_function`** &mdash; creates a function "from scratch" or from another function.
+- **`code_to_function`** &mdash; creates a function from source code, a source-code URL, or a web notebook.
+- **`import_function`** &mdash; imports a function from a local or remote YAML function-configuration file or from a function object in the MLRun database (using a DB address of the format `db://<project>/<name>[:<tag>]`).
+<!-- SLSL: Confirm my edits, specifically for `import_function`. (The original
+  `import_function` doc was "functions are imported from a local/remote YAML
+  file or from the function DB (prefix: `db://<project>/<name>[:tag]`)".)
+  I thought of adding "[...]" at the end of the URL because of the use of the
+  "prefix" terminology in the original doc, but from the uses and embedded and
+  NB doc in the current code I don't see such paths? NOWNOW-RND -->
 
-- `new_function` &mdash; create a function object from scratch or another function.
-- `code_to_function` &mdash; functions are created from source code, source URL or notebook.
-- `import_function` &mdash; functions are imported from a local/remote YAML file or from the function DB (prefix: `db://<project>/<name>[:<tag>]`).
-
-`function.save(tag="")` (store in db) and `function.export(target-path)` (store yaml) can be used to save functions.
-
-See each function doc/help and examples for details.
+You can use the `save` function method to save a function object in the MLRun database, or the `export` method to save a YAML function-configuration function to your preferred local or remote location.
+For function-method details and examples, see the embedded documentation/help text.
+<!-- SLSL: Why don't we include the function methods in the generated reference?
+  Is it because it's runtime-specific? (It's not a "module" ...?) NOWNOW-RND -->
 
 [Back to top](#top) / [Back to quick-start TOC](#qs-tutorial)
 
 <a id="auto-parameterization-artifact-tracking-n-logging"></a>
 ### Automated Parameterization, Artifact Tracking, and Logging
 
-After running a job, you need to track the run, it inputs, parameters, and outputs.
-MLRun introduces a concept of an ML **"context"**: the code can be instrumented to get parameters and inputs from the context, as well as log outputs, artifacts, tags, and time-series metrics.
+After running a job, you need to be able to track it, including viewing the run parameters, inputs, and outputs.
+To support this, MLRun introduces a concept of a runtime **"context"**: the code can be set up to get parameters and inputs from the context, as well as log run outputs, artifacts, tags, and time-series metrics in the context.
+<!-- SLSL: I replaced the terminology "ML context" with "runtime context",
+  which was already used elsewhere. NOWNOW-RND -->
 
-<b>Example XGBoost training function</b>
+<a id="auto-parameterization-artifact-tracking-n-logging-example"></a>
+#### Example
+<!-- SLSL: I edited to create a single Example section and edit the texts.
+  I also edited the code comments and some line breaks (for PEP8) and prepared
+  similar updates in the code (in the mlrun/demo-xgboost repo) that will be
+  committed in a separate PR. NOWNOW-RND -->
+
+The following code example from the [**train-xgboost.ipynb**](https://github.com/mlrun/demo-xgb-project/blob/master/notebooks/train-xgboost.ipynb) notebook of the MLRun XGBoost demo (**demo-xgboost**) defines two functions:
+the `iris_generator` function loads the Iris data set and saves it to the function's context object; the `xgb_train` function uses XGBoost to train an ML model on a data set and saves the log results in the function's context:
 
 ```python
 import xgboost as xgb
@@ -323,7 +342,7 @@ def iris_generator(context):
     iris_dataset = pd.DataFrame(data=iris.data, columns=iris.feature_names)
     iris_labels = pd.DataFrame(data=iris.target, columns=['label'])
     iris_dataset = pd.concat([iris_dataset, iris_labels], axis=1)
-    context.logger.info('saving iris dataframe to {}'.format(context.out_path))
+    context.logger.info('Saving Iris data set to "{}"'.format(context.out_path))
     context.log_artifact(TableArtifact('iris_dataset', df=iris_dataset))
 
 
@@ -344,6 +363,7 @@ def xgb_train(context,
     dtrain = xgb.DMatrix(X_train, label=Y_train)
     dtest = xgb.DMatrix(X_test, label=Y_test)
 
+    # Get parameters from event
     param = {"max_depth": max_depth,
              "eta": eta, "nthread": 4,
              "num_class": num_class,
@@ -360,23 +380,31 @@ def xgb_train(context,
                          local_path=model_name, labels={'framework': 'xgboost'})
 ```
 
-This example function can be executed locally with parameters (for example, `eta` or `gamma`).
-The results and artifacts can be logged automatically into a database by using a single command:
-```
+The example training function can be executed locally with parameters, and the run results and artifacts can be logged automatically into a database by using a single command, as demonstrated in the following example; the example sets the function's `eta` parameter:
+```python
 train_run = new_function().run(handler=xgb_train).with_params(eta=0.3)
 ```
 
-You can swap the function with a serverless runtime and the same will run on a cluster.<br>
-This can result in 10x performance boost.
+Alternatively, you can replace the function with a serverless runtime to run the same code on a remote cluster, which could result in a ~10x performance boost.
+You can find examples for different runtimes &mdash; such as a Kubernetes job, Nuclio, Dask, Spark, or an MPI job &mdash; in the MLRun [**examples**](examples) directory.
+<!-- SLSL: Edited. I added "remote" before "cluster"? NOWNOW-RND -->
 
-The [**examples**](examples) directory contains more examples, using different runtimes &mdash; such as a Kubernetes job, Nuclio, Dask, Spark, or an MPI job.
-
-If your run your code from `main`, you can get the runtime context by calling the `get_or_create_ctx` method.
-
-The following example demonstrates how you can use the context object in various ways to read and write metadata, secrets, inputs, or outputs.
-For more details, see the [**horovod-training.py**](examples/horovod-training.py) example.
-
-<b>Example: obtaining and using the context object</b>
+If you run your code from the `main` function, you can get the runtime context by calling the `get_or_create_ctx` method, as demonstrated in the following code from the MLRun [**training.py**](examples/training.py) example application.
+The code also demonstrates how you can use the context object to read and write execution metadata, parameters, secrets, inputs, and outputs:
+<!-- SLSL: Edited.
+  I replaced the ref to the horovod-training/py example with a ref to the
+  training.py example, as the example is from the latter example.
+  I made some edits to the example comments and line breaks (for PEP8) and
+  prepared similar edits in the examples/training.py example, to be committed
+  as part of a separate PR.
+  NOTE: I removed the comment to add params or use default, as it wasn't
+  followed by any example; instead, I edited the prints comment also to refer
+  to accessing context parameter values (which are passed to the my_job()
+  function from the runtime context as separate parameters in addition to a
+  context parameter - see the `if __name__ == "__main__"`` portion of the
+  training.py file. And I added a line break in the code for PEP8.
+  I also added "TODO:" to the comment to run some code, and rephrased.
+  NOWNOWNOW-RND -->
 
 ```python
 from mlrun import get_or_create_ctx
@@ -384,18 +412,18 @@ from mlrun.artifacts import ChartArtifact, TableArtifact
 
 
 def my_job(context, p1=1, p2='x'):
-    # Load the MLRun runtime context; the context is set by the runtime
-    # framework - for example, Kubeflow
+    # Load the MLRun runtime context. The context is set by the runtime
+    # framework - for example, Kubeflow.
 
-    # Get parameters from the runtime context (or use defaults)
-
-    # Access input metadata, values, files, and secrets (passwords)
+    # Access runtime-context information - input metadata, parameter values,
+    # authentication secret (access key), and input artifacts (files)
     print(f'Run: {context.name} (uid={context.uid})')
     print(f'Params: p1={p1}, p2={p2}')
     print('accesskey = {}'.format(context.get_secret('ACCESS_KEY')))
-    print('file\n{}\n'.format(context.get_input('infile.txt', 'infile.txt').get()))
+    print('file\n{}\n'.format(context.get_input('infile.txt', 'infile.txt')
+          .get()))
 
-    # Run some useful code - for example, ML training or data preparation
+    # TODO: Run some useful code, such as ML training or data preparation.
 
     # Log scalar result values (job-result metrics)
     context.log_result('accuracy', p1 * 2)
@@ -403,13 +431,13 @@ def my_job(context, p1=1, p2='x'):
     context.set_label('framework', 'sklearn')
 
     # Log various types of artifacts (file, web page, table), which will be
-    # versioned and visible in the MLRun dashboard
+    # versioned and visible on the MLRun dashboard
     context.log_artifact('model', body=b'abc is 123', local_path='model.txt', labels={'framework': 'xgboost'})
     context.log_artifact('html_result', body=b'<b> Some HTML <b>', local_path='result.html')
     context.log_artifact(TableArtifact('dataset', '1,2,3\n4,5,6\n', visible=True,
                                         header=['A', 'B', 'C']), local_path='dataset.csv')
 
-    # Create a chart output, which will be visible in the pipelines UI
+    # Create a chart output, which will be visible in the Kubeflow Pipelines UI
     chart = ChartArtifact('chart')
     chart.labels = {'type': 'roc'}
     chart.header = ['Epoch', 'Accuracy', 'Loss']
@@ -425,11 +453,11 @@ if __name__ == "__main__":
     my_job(context, p1, p2)
 ```
 
-This code sample can be invoked with the following code:
+The example **training.py** application can be invoked as a local task, as demonstrated in the following code from the MLRun [**mlrun_basics.ipynb**](examples/mlrun_basics.ipynb) example notebook:
 ```python
 run = run_local(task, command='training.py')
 ```
-Alternatively, it can be invoked by using the `mlrun` CLI; edit the parameters and the S3 path in the input data, as needed command, and ensure that there's a **secrets.txt** file with the required S3 download credentials:
+Alternatively, you can invoke the application by using the `mlrun` CLI; edit the parameters, inputs, and/or secret information, as needed:
 ```sh
 mlrun run --name train -p p2=5 -i infile.txt=s3://my-bucket/infile.txt -s file=secrets.txt training.py
 ```
@@ -439,22 +467,21 @@ mlrun run --name train -p p2=5 -i infile.txt=s3://my-bucket/infile.txt -s file=s
 <a id="using-hyperparameters-for-job-scaling"></a>
 ### Using Hyperparameters for Job Scaling
 
-Data science involves long-running compute and data-intensive tasks.
-To gain efficiency, you need to implement parallelism whenever possible.
-MLRun delivers scalability using two mechanisms:
+Data science involves long computation times and data-intensive tasks.
+To ensure efficiency and scalability, you need to implement parallelism whenever possible.
+MLRun supports this by using two mechanisms:
 
-1. Clustering &mdash; run the code on a distributed processing engined (such as Dask, Spark, or Horovod).
-2. Load-balancing/partitioning &mdash; partition the work to multiple workers.
+1. Clustering &mdash; run the code on a distributed processing engine (such as Dask, Spark, or Horovod).
+2. Load-balancing/partitioning &mdash; split (partition) the work across multiple workers.
 
-MLRun can accept hyperparameters or parameter lists, deploy many parallel workers, and partition the work among those.
+MLRun functions and tasks can accept hyperparameters or parameter lists, deploy many parallel workers, and partition the work among the deployed workers.
 The parallelism implementation is left to the runtime.
-Each runtime may have its own way of running tasks concurrently.
+Each runtime may have its own method of concurrent tasks execution.
 For example, the Nuclio serverless engine manages many micro threads in the same process, which can run multiple tasks in parallel.
-In a containerized system like Kubernetes, you can launch multiple containers each processing a different task.
+In a containerized system like Kubernetes, you can launch multiple containers, each processing a different task.
 
 MLRun supports parallelism.
-You can run many parameter combinations for the previous `xgboost` function by using hyperparameters:
-
+For example, the following code demonstrates how to use hyperparameters to run the XGBoost model-training task from the example in the previous section (`xgb_train`) with different parameter combinations:
 ```python
     parameters = {
          "eta":       [0.05, 0.10, 0.20, 0.30],
@@ -465,23 +492,38 @@ You can run many parameter combinations for the previous `xgboost` function by u
     task = NewTask(handler=xgb_train, out_path='/User/mlrun/data').with_hyper_params(parameters, 'max.accuracy')
     run = run_local(task)
 ```
+<!-- SLSL: The example uses a hardcoded local platform `/User/...` path without
+  mentioning this anywhere in the doc + it would have been better to use
+  os.path.join(). mlrun_basics.ipynb defines an artifact_path variable - 
+  `artifact_path = path.join(out, '{{run.uid}}')` - and then uses it in the
+  NewTask command (`artifact_path=artifact_path` in the NewTask function call)
+  and in the CLI equivalent (`{artifact_path}`).
+  Also, the original README CLI equivalent below didn't set the out-path flag,
+  even though it's supposedly an equivalent of the NewTask command above. => I
+  added the out-path CLI option, similar to what's done in the
+  mlrun_basics.ipynb example (except that it's done by using a variable).
+  For now, I didn't change the output path in the doc or add explanations.
+  NOWNOWNOW-RND -->
 
-This code demonstrates how to tell MLRun to run the same task while choosing the parameters from multiple lists (grid search).
-MLRun will record all the runs, but mark only the run with minimal loss as the selected result.
+This code demonstrates how to instruct MLRun to run the same task while choosing the parameters from multiple lists (grid search).
+MLRun then records all the runs, but marks only the run with minimal loss as the selected result.
 For parallelism, it would be better to use runtimes like Dask, Nuclio, or jobs.
 
-The same logic and also be executed by using the MLRun CLI (`mlrun`):
+Alternatively, you can run a similar task (with hyperparameters) by using the MLRun CLI (`mlrun`):
 ```sh
-mlrun run --name train_hyper -x p1="[3,7,5]" -x p2="[5,2,9]" training.py
+mlrun run --name train_hyper -x p1="[3,7,5]" -x p2="[5,2,9]" --out-path '/User/mlrun/data' training.py
 ```
 
-You can use a parameters file if you want to control the parameter combinations or if the parameters are more complex.
-The following code demonstrates how to configure a CSV parameters file:
-
+You can also use a parameters file if you want to control the parameter combinations or if the parameters are more complex.
+The following code from the example **mlrun_basics** notebook demonstrates how to run a task that uses a CSV parameters file (**params.csv** in the current directory):
 ```python
     task = NewTask(handler=xgb_train).with_param_file('params.csv', 'max.accuracy')
     run = run_local(task)
 ```
+<!-- SLSL: Is the `with_param_file()` `param_file` parameter a local path to
+  a parameters file - in this example, a params.csv file in the current
+  directory? Can the function also receive a URL for a remote params file?
+  NOWNOW-RND -->
 
 > **Note:** Parameter lists can be used for various tasks.
 > Another example is to pass a list of files and have multiple workers process the files simultaneously instead of one at a time.
