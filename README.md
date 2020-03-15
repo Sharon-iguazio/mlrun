@@ -209,9 +209,9 @@ MLRun has many code examples and tutorial Jupyter notebooks with embedded docume
 - [Automated Code Deployment and Containerization](#auto-code-deployment-n-containerization)
 - [Build and run function from a remote IDE using the CLI](examples/remote.md)
 - [Running an ML Workflow with Kubeflow Pipelines](#run-ml-workflow-w-kubeflow-pipelines)
-- [Viewing Run Information and Artifacts](#view-run-info-n-artifacts)
-- [The MLRun Dashboard](#mlrun-ui)
-- [MLRun Database Methods](#mlrun-db-methods)
+- [Viewing Run Data and Performing Database Operations](#db-operations)
+  - [The MLRun Dashboard](#mlrun-ui)
+  - [MLRun Database Methods](#mlrun-db-methods)
 - [Additional Information and Examples](#additional-info-n-examples)
   - [Replacing Runtime Context Parameters from the CLI](#replace-runtime-context-param-from-cli)
   - [Using Remote Function Code](#using-remote-function-code)
@@ -630,21 +630,23 @@ def xgb_pipeline(
 
 [Back to top](#top) / [Back to quick-start TOC](#qs-tutorial)
 
-<a id="view-run-info-n-artifacts"></a>
-### Viewing Run Information and Artifacts
+<a id="db-operations"></a>
+### Viewing Run Data and Performing Database Operations
 
-When you configure an MLRun database, the results and artifacts from each run are recorded and can be viewed from the MLRun dashboard or by using various MLRun database methods from your code.
-For more information, see [The MLRun Dashboard](#mlrun-ui) and [MLRun Database Methods](#mlrun-db-methods).
+When you configure an MLRun database or API service, the results, parameters, and input and output artifacts of each run are recorded in the database.
+You can view the results and perform operations on the database by using either of the following methods:
+
+- Using [the MLRun dashboard](#mlrun-ui)
+- Using [DB methods](#mlrun-db-methods) from your code
 
 [Back to top](#top) / [Back to quick-start TOC](#qs-tutorial)
 
 <a id="mlrun-ui"></a>
-### The MLRun Dashboard
+#### The MLRun Dashboard
 
-The MLRun dashboard is a graphical user interface (GUI) for working with MLRun.
-<!-- SLSL: TODO: Add more info after I establish what can be done from the UI.
-  Can they also run jobs, or just view results? Can they analyze results? etc.
--->
+The MLRun dashboard is a graphical user interface (GUI) for working with MLRun and viewing run data.
+<!-- SLSL: I wasn't sure whether they can perform operations on the DB elements
+  from the UI, such as deleting runs? NOWNOW-RND -->
 
 > **Note:** The UI requires an MLRun database/API service; see the Kubernetes YAML files in the [**hack**](hack) directory.
 <!-- SLSL: How are the hack YAML files related to running an MLRun API service? -->
@@ -654,10 +656,10 @@ The MLRun dashboard is a graphical user interface (GUI) for working with MLRun.
 [Back to top](#top) / [Back to quick-start TOC](#qs-tutorial)
 
 <a id="mlrun-db-methods"></a>
-### MLRun Database Methods
+#### MLRun Database Methods
 
-If you configured an MLRun database, you can use the `get_run_db` DB method to get an MLRun DB object.
-Then, use the DB object's `connect` method to connect to the MLRun database or API service, and use additional methods to perform different operations &mdash; such as `list_artifacts` to list run artifacts or `del_runs` to delete completed runs.
+You can use the `get_run_db` DB method to get an MLRun DB object for a configured MLRun database or API service.
+Then, use the DB object's `connect` method to connect to the database or API service, and use additional methods to perform different operations, such as listing run artifacts or deleting completed runs.
 For more information and examples, see the [**mlrun_db.ipynb**](examples/mlrun_db.ipynb) example notebook, which includes the following sample DB method calls:
 ```python
 from mlrun import get_run_db
