@@ -208,7 +208,7 @@ MLRun has many code examples and tutorial Jupyter notebooks with embedded docume
 - [Using Hyperparameters for Job Scaling](#using-hyperparameters-for-job-scaling)
 - [Automated Code Deployment and Containerization](#auto-code-deployment-n-containerization)
 - [Build and run function from a remote IDE using the CLI](examples/remote.md)
-- [Running an MLRun ML Pipeline with Kubeflow Pipelines](#run-mlrun-ml-pipeline-w-kubeflow-pipelines)
+- [Running an ML Workflow with Kubeflow Pipelines](#run-ml-workflow-w-kubeflow-pipelines)
 - [Viewing Run Information and Artifacts](#view-run-info-n-artifacts)
 - [The MLRun Dashboard](#mlrun-ui)
 - [MLRun Database Methods](#mlrun-db-methods)
@@ -492,6 +492,8 @@ For example, the following code demonstrates how to use hyperparameters to run t
     task = NewTask(handler=xgb_train, out_path='/User/mlrun/data').with_hyper_params(parameters, 'max.accuracy')
     run = run_local(task)
 ```
+<!-- SLSL: I would rename `with_hyper_params` to `with_hyperparams`, as we went
+  with the "hyperparameters" spelling in the docs. NOWNOW-RND -->
 <!-- SLSL: The example uses a hardcoded local platform `/User/...` path without
   mentioning this anywhere in the doc + it would have been better to use
   os.path.join(). mlrun_basics.ipynb defines an artifact_path variable - 
@@ -525,8 +527,13 @@ The following code from the example **mlrun_basics** notebook demonstrates how t
   directory? Can the function also receive a URL for a remote params file?
   NOWNOW-RND -->
 
-> **Note:** Parameter lists can be used for various tasks.
-> Another example is to pass a list of files and have multiple workers process the files simultaneously instead of one at a time.
+> **Note:** Parameter lists can be used in various ways.
+> For example, you can pass multiple parameter files and use multiple workers to process the files simultaneously instead of one at a time.
+<!-- SLSL: I rephrased, including to replace the "list" terminology, because I
+  think the `NewTask` `with_param_file` method accepts the path/name of a single
+  parameters file and the reference here is probably to calling this method
+  multiple times (although I still don't know how you can configure different
+  workers for each params file)? NOWNOW-RND -->
 
 [Back to top](#top) / [Back to quick-start TOC](#qs-tutorial)
 
@@ -534,22 +541,24 @@ The following code from the example **mlrun_basics** notebook demonstrates how t
 ### Automated Code Deployment and Containerization
 
 MLRun adopts Nuclio serverless technologies for automatically packaging code and building containers.
-This way, you can specify code with some package requirements and let the system build and deploy your software.
+This enables you to provide code with some package requirements and let MLRun build and deploy your software.
 
-Building and deploying a function is as easy as typing `function.deploy(...)`.
-This initiates a build or deployment job.
-Deployment jobs can be incorporated in pipelines just like regular jobs (using the `.deploy_step` method), enabling full automation and CI/CD.
+To build or deploy a function, all you need is to call the function's `deploy` method, which initiates a build or deployment job.
+Deployment jobs can be incorporated in pipelines just like regular jobs (using the `deploy_step` method of the function or Kubernetes-job runtime), thus enabling full automation and CI/CD.
+<!-- SLSL: I Added the reference to the function or Kubernetes-job runtime.
+  `deploy_step` is defined as a `RemoteRuntime` method in
+  mlrun/runtimes/function.py and as a `KubjobRuntime` method in
+  mlrun/runtimes/kubejob.py. NOWNOW-RND -->
 
-Functions can be built from source code, function specs, notebooks, Git repos, or TAR archives.
+A functions can be built from source code or from a function specification, web notebook, Git repo, or TAR archive.
 
-Build can also be done using the `mlrun` CLI, by providing the CLI with the path to a YAML function configuration file; you can generate such a file by using the `function.to_yaml` or `function.export` methods.
-
-For example, the following CLI code refers to a **function.yaml** file:
+A function can also be built by using the `mlrun` CLI and providing it with the path to a YAML function-configuration file.
+You can generate such a file by using the `to_yaml` or `export` function method.
+For example, the following CLI code builds a function from a **function.yaml** file in the current directory:
 ```sh
 mlrun build function.yaml
 ```
-
-Following is an example **function.yaml** file:
+Following is an example **function.yaml** configuration file:
 ```yaml
 kind: job
 metadata:
@@ -568,28 +577,29 @@ spec:
 
 For more examples of building and running functions remotely using the MLRun CLI (`mlrun`), see the [**remote**](examples/remote.md) example.
 
-You can also convert your notebook to a containerized job, as demonstrated in the following sample code.
-For details, see the [**mlrun_jobs.ipynb**](examples/mlrun_jobs.ipynb) example.
+You can also convert your web notebook to a containerized job, as demonstrated in the following sample code; for a similar example with more details, see the [**mlrun_jobs.ipynb**](examples/mlrun_jobs.ipynb) example:
 
 ```python
-# Create an ML function from the notebook; store data in the data store of the
-# Iguazio Data Science Platform (v3io mount)
+# Create an ML function from the your notebook; use the `v3io` mount to attach
+# the function to the data store of the Iguazio Data Science Platform
 fn = code_to_function(kind='job').apply(mount_v3io())
 
-# Prepare an image from the dependencies, to avoid building it on each run
+# Prepare an image from the dependencies to allow updating the code and
+# parameters per run without the need to build a new image
 fn.build(image='mlrun/nuctest:latest')
 ```
 
 [Back to top](#top)
 
-<a id="run-mlrun-ml-pipeline-w-kubeflow-pipelines"></a>
-### Running an MLRun ML Pipeline with Kubeflow Pipelines
+<a id="run-ml-workflow-w-kubeflow-pipelines"></a>
+### Running an ML Workflow with Kubeflow Pipelines
 
-ML pipeline execution in MLRun is similar to CLI execution.
+ML pipeline execution with MLRun is similar to CLI execution.
+A pipeline is created by running an MLRun workflow.
 MLRun automatically saves outputs and artifacts in a way that is visible to [Kubeflow Pipelines](https://github.com/kubeflow/pipelines), and allows interconnecting steps.
 
-For an example of a full ML pipeline that's implemented in a Jupyter notebook, see the MLRun [demo-xgb-project](https://github.com/mlrun/demo-xgb-project) repository.
-The  [**train-xgboost.ipynb**](https://github.com/mlrun/demo-xgb-project/blob/master/notebooks/train-xgboost.ipynb) demo notebook includes the following code:
+For an example of a full ML pipeline that's implemented in a web notebook, see the XGBoost MLRun demo ([**demo-xgb-project**](https://github.com/mlrun/demo-xgb-project)).
+The  [**train-xgboost.ipynb**](https://github.com/mlrun/demo-xgb-project/blob/master/notebooks/train-xgboost.ipynb) demo notebook includes the following code for creating an XGBoost ML-training workflow pipeline:
 ```python
 @dsl.pipeline(
     name='My XGBoost training pipeline',
@@ -623,7 +633,7 @@ def xgb_pipeline(
 <a id="view-run-info-n-artifacts"></a>
 ### Viewing Run Information and Artifacts
 
-When you configure an MLRun database (`rundb`), the results and artifacts from each run are recorded and can be viewed from the graphical [MLRun dashboard](#mlrun-ui) or by using various MLRun `db` methods, as demonstrated in the [**mlrun_db.ipynb**](examples/mlrun_db.ipynb) example notebook.
+When you configure an MLRun database, the results and artifacts from each run are recorded and can be viewed from the MLRun dashboard or by using various MLRun database methods from your code.
 For more information, see [The MLRun Dashboard](#mlrun-ui) and [MLRun Database Methods](#mlrun-db-methods).
 
 [Back to top](#top) / [Back to quick-start TOC](#qs-tutorial)
@@ -646,9 +656,29 @@ The MLRun dashboard is a graphical user interface (GUI) for working with MLRun.
 <a id="mlrun-db-methods"></a>
 ### MLRun Database Methods
 
-If you configured an MLRun database (`rundb`), you can use `db` methods to connect to the database and perform different operations, such as viewing and deleting run information and artifacts.
-See the [**mlrun_db.ipynb**](examples/mlrun_db.ipynb) example notebook for examples of using the following `db` methods:
+If you configured an MLRun database, you can use the `get_run_db` DB method to get an MLRun DB object.
+Then, use the DB object's `connect` method to connect to the MLRun database or API service, and use additional methods to perform different operations &mdash; such as `list_artifacts` to list run artifacts or `del_runs` to delete completed runs.
+For more information and examples, see the [**mlrun_db.ipynb**](examples/mlrun_db.ipynb) example notebook, which includes the following sample DB method calls:
+```python
+from mlrun import get_run_db
 
+# Get an MLRun DB object and connect to an MLRun database/API service.
+# Specify the DB path (for example, './' for the current directory) or
+# the API URL ('http://mlrun-api:8080' for the default configuration).
+db = get_run_db('./').connect()
+
+# List all runs
+db.list_runs('').show()
+
+# List all artifacts for version 'latest' (default)
+db.list_artifacts('', tag='').show()
+
+# Check different artifact versions
+db.list_artifacts('ch', tag='*').show()
+
+# Delete completed runs
+db.del_runs(state='completed')
+```
 <!-- SLSL: I edited the comments here and in examples/mlrun_db.ipynb.
   For the connect() method, the original README comment was
   "Connect to a local file DB" while the original example NB comment was
@@ -669,24 +699,6 @@ See the [**mlrun_db.ipynb**](examples/mlrun_db.ipynb) example notebook for examp
   are currently documented - see also the generated Python doc at
   https://mlrun.readthedocs.io/en/latest/mlrun.db.html. 
   NOWNOW-RND -->
-```python
-from mlrun import get_run_db
-
-# Connect to an MLRun database/API service
-db = get_run_db('./').connect()
-
-# List all runs
-db.list_runs('').show()
-
-# List all artifacts for version \"latest\" (default)
-db.list_artifacts('', tag='').show()
-
-# Check different artifact versions
-db.list_artifacts('ch', tag='*').show()
-
-# Delete completed runs
-db.del_runs(state='completed')
-```
 
 [Back to top](#top) / [Back to quick-start TOC](#qs-tutorial)
 
