@@ -102,7 +102,7 @@ class BaseMetadata(ModelObj):
 
 
 class ImageBuilder(ModelObj):
-    """An Image builder"""
+    """An image builder."""
     def __init__(
         self, functionSourceCode=None, source=None, image=None,
             base_image=None, commands=None, secret=None,
@@ -120,7 +120,7 @@ class ImageBuilder(ModelObj):
 
 
 class RunMetadata(ModelObj):
-    """Run metadata"""
+    """Run metadata."""
     def __init__(
         self, uid=None, name=None, project=None, labels=None,
             annotations=None, iteration=None):
@@ -141,7 +141,7 @@ class RunMetadata(ModelObj):
 
 
 class RunSpec(ModelObj):
-    """Run specification"""
+    """A run specification."""
     def __init__(self, parameters=None, hyperparams=None, param_file=None,
                  selector=None, handler=None, inputs=None, outputs=None,
                  input_path=None, output_path=None, function=None,
@@ -212,7 +212,7 @@ class RunSpec(ModelObj):
 
 
 class RunStatus(ModelObj):
-    """Run status"""
+    """Run status."""
     def __init__(self, state=None, error=None, host=None, commit=None,
                  status_text=None, results=None, artifacts=None,
                  start_time=None, last_update=None, iterations=None):
@@ -229,7 +229,7 @@ class RunStatus(ModelObj):
 
 
 class RunTemplate(ModelObj):
-    """Run template"""
+    """A run template."""
     def __init__(self, spec: RunSpec = None,
                  metadata: RunMetadata = None):
         self._spec = None
@@ -286,7 +286,7 @@ class RunTemplate(ModelObj):
 
 
 class RunObject(RunTemplate):
-    """A run object"""
+    """A run object."""
     def __init__(self, spec: RunSpec = None,
                  metadata: RunMetadata = None,
                  status: RunStatus = None):
@@ -374,7 +374,7 @@ def NewTask(name=None, project=None, handler=None,
             inputs=None, outputs=None,
             in_path=None, out_path=None, artifact_path=None,
             secrets=None, base=None):
-    """Create a new task."""
+    """Creates a new task."""
 
     if base:
         run = deepcopy(base)
@@ -393,3 +393,4 @@ def NewTask(name=None, project=None, handler=None,
     run.spec.output_path = artifact_path or out_path or run.spec.output_path
     run.spec.secret_sources = secrets or run.spec.secret_sources or []
     return run
+

@@ -41,7 +41,7 @@ from .config import config as mlconf
 def run_pipeline(pipeline, arguments=None, experiment=None, run=None,
                  namespace=None, artifact_path=None, ops=None,
                  url=None, remote=False):
-    """Run an ML pipeline using Kubeflow Pipelines (KFP).
+    """Runs an ML pipeline using Kubeflow Pipelines (KFP).
 
     Submit a workflow task to KFP using the MLRun API service.
 
@@ -90,7 +90,7 @@ def run_pipeline(pipeline, arguments=None, experiment=None, run=None,
 
 
 def get_pipline(run_id, wait=0, namespace=None):
-    """Get the status of a pipeline.
+    """Gets the status of a pipeline.
     
     Optionally set ``wait`` to the duration to wait for the status, in seconds."""
     # SLSL: I edited the description, but I think the second sentence should
@@ -106,7 +106,7 @@ def get_pipline(run_id, wait=0, namespace=None):
 
 def run_local(task, command='', name: str = '', args: list = None,
               workdir=None, project: str = '', tag: str = '', secrets=None):
-    """Run a task on function or code (PY, IPYNB, or YAML file) locally.
+    """Runs a task locally on a function or code file (PY/IPYNB/YAML).
 
     :example:
     ::
@@ -192,16 +192,17 @@ def get_or_create_ctx(name: str,
                       spec=None,
                       with_env: bool = True,
                       rundb: str = ''):
-    """Obtain a run context from within the user program.
+    """Obtains a run context from within the user program.
 
     The run context is an interface for receiving parameters and data and
     logging run results. The context is read from the event, spec, or
     environment (in this order). You can also work without a context using the
     default local mode.
 
-    All results are automatically stored in the MLRun database.
-    The path to the DB can be specified in the ``rundb`` method parameter or in
-    an environment variable.
+    All results are automatically stored in the MLRun database, if configured.
+    You can configure a database by setting the DB path or URL either in the
+    ``rundb`` parameter of the ``get_or_create_ctx`` method or in a
+    ``MLRUN_DBPATH`` environment variable.
 
     :param name:     Run name; overridden by context
     :param event:    Nuclio event object that represents an MLRun function
@@ -246,6 +247,8 @@ def get_or_create_ctx(name: str,
       context.log_artifact('results.html', body=b'<b> Some HTML <b>', viewer='web-app')
 
     """
+    # SLSL: I don't understand the "overridden by context" in the `name` doc?
+    # NOWNOW-RND
 
     if global_context.get() and not spec and not event:
         return global_context.get()
@@ -279,7 +282,7 @@ def get_or_create_ctx(name: str,
     out = rundb or mlconf.dbpath or environ.get('MLRUN_DBPATH')
     if out:
         autocommit = True
-        logger.info('logging run results to: {}'.format(out))
+        logger.info('Logging run results to "{}"'.format(out))
 
     ctx = MLClientCtx.from_dict(newspec, rundb=out, autocommit=autocommit,
                                 tmp=tmp, host=socket.gethostname())
@@ -287,15 +290,15 @@ def get_or_create_ctx(name: str,
 
 
 def import_function(url='', secrets=None, db=''):
-    """Import a function.
+    """Imports a function.
     
     Create a function object from a DB or from a YAML file that's read from
     a local file or from a remote URL (such as HTTP(S), AWS S3, Git, or the
     Iguazio Data Science Platform).
 
-    :param url:      Path or URL of a function-spec YAML file;
-                     "db://<project>/<name>[:<tag>]" to read from the MLRun DB
-
+    :param url:      Path or URL of a function-specification YAML file, or
+                     ``"db://<project>/<name>[:<tag>]"`` to read the spec from
+                     an MLRun DB object
     :param secrets:  [Optional] Credentials dictionary for accessing the import
                      DB or URL (S3, Iguazio Data Science Platform, etc.)
     :param db:       [Optional] Path or URL of the MLRun database/API service
@@ -318,7 +321,7 @@ def import_function(url='', secrets=None, db=''):
 
 
 def import_function_to_dict(url, secrets=None):
-    """Load a function specification from a local or a remote YAML file."""
+    """Loads a function specification from a local or a remote YAML file."""
     # SLSL: I added the parameter descriptions. Is it only intended as an
     # internal file for use from import_function()? NOWNOW-RND
 
@@ -366,7 +369,7 @@ def new_function(name: str = '', project: str = '', tag: str = '',
                  kind: str = '', command: str = '', image: str = '',
                  args: list = None, runtime=None,
                  mode=None, kfp=None):
-    """Create a new ML function from base properties.
+    """Creates a new ML function from base properties.
 
     :example:
     ::
@@ -473,10 +476,11 @@ def code_to_function(name: str = '', project: str = '', tag: str = '',
                      filename: str = '', handler='', runtime='', kind='',
                      image=None, code_output='', embed_code=True,
                      with_doc=False):
-    """Convert code or a web notebook to a function object with embedded code.
+    """Converts code or a web notebook to a function object with embedded code.
 
-    Code stored in the function spec and can be refreshed using `.with_code()`,
-    eliminating the need to rebuild container images for each code edit.
+    The code is stored in the function specification and can be refreshed by
+    using the `with_code` function-runtime method, eliminating the need to
+    rebuild container images for each code edit.
 
     :param name:       Function name
     :param project:    Function project (``None`` for ``'default'``)

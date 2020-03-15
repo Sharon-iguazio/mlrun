@@ -175,23 +175,32 @@ class BaseRuntime(ModelObj):
             project: str = '', params: dict = None, inputs: dict = None,
             out_path: str = '', workdir: str = '', artifact_path='',
             watch: bool = True, schedule: str = ''):
-        """Run a local or remote task
+        """Runs a local or a remote task.
 
-        :param runspec:       run template object or dict (see RunTemplate)
-        :param handler:       pointer or name of a function handler
-        :param name:          execution name
-        :param project:       project name
-        :param params:        input parameters (dict)
-        :param inputs:        input objects (dict of key: path)
-        :param out_path:      default artifact output path
-        :param artifact_path: default artifact output path (will replace out_path)
-        :param workdir:       default input artifacts path
-        :param watch:         watch/follow run log
-        :param schedule:      cron string for scheduled jobs
+        :param runspec:    A run template object or dictionary (see
+                           ``RunTemplate``)
+        :param handler:    Pointer or name of a function handler
+        :param name:       Run name
+        :param project:    Project name
+        :param params:     A dictionary of input run parameters
+        :param inputs:     A dictionary or input run artifacts (data objects)
+                           of the format ``<input name>: <path to artifact>``
+        :param out_path:   [DEPRECATED] Default path for storing output run
+                           artifacts; use `artifact_path` instead
+        :param artifact_path: Default path for storing output run artifacts;
+                           (replaces ``out_path``)
+        :param workdir:    Default input artifacts path
+        :param watch:      Watch (track) the run log
+        :param schedule:   Cron string for scheduled jobs
 
         :return: Run-context object (dict) with run metadata, results, and
             status
         """
+        # SLSL: What's the difference between `inputs` and `workdir`, which
+        # have a similar description? Is `workdir` intended to replace `inputs`
+        # like `artifact_path` replaces `outputs`? I'm not sure, because not
+        # only isn't it documented, there aren't equivalent changes in the
+        # `run.execute` method? NOWNOW-RND
 
         if runspec:
             runspec = deepcopy(runspec)
@@ -427,7 +436,7 @@ class BaseRuntime(ModelObj):
 
     def _post_run(
             self, resp: dict = None, task: RunObject = None, err=None) -> dict:
-        """Update the task state in the DB"""
+        """Updates the task state in the DB."""
         was_none = False
         if resp is None and task:
             was_none = True
@@ -495,20 +504,22 @@ class BaseRuntime(ModelObj):
                 project: str = '', params: dict = None, hyperparams=None,
                 selector='', inputs: dict = None, outputs: dict = None,
                 in_path: str = '', out_path: str = '', image: str = '', use_db=False):
-        """Run a local or remote task
+        """Runs a local or a remote task.
 
-        :param runspec:    run template object or dict (see RunTemplate)
-        :param handler:    name of the function handler
-        :param name:       execution name
-        :param project:    project name
-        :param params:     input parameters (dict)
-        :param hyperparams: hyper parameters
-        :param selector:   selection criteria for hyper params
-        :param inputs:     input objects (dict of key: path)
-        :param outputs:    list of outputs which can pass in the workflow
-        :param image:      container image to use
+        :param runspec:    A run template object or dict (see RunTemplate)
+        :param handler:    Name of the function handler
+        :param name:       Run name
+        :param project:    Project name
+        :param params:     An input-parameters dictionary
+        :param hyperparams: A list of hyperparameters
+        :param selector:   Selection criteria for hypeparameters
+        :param inputs:     A dictionary or input run artifacts (data objects)
+                           of the format ``<input name>: <path to artifact>``
+        :param outputs:    A list of output run-artifact names that can be
+                           passed in the workflow
+        :param image:      The name of the container image to use
 
-        :return: Kubeflow Pipelines containerOp object
+        :return: A Kubeflow Pipelines containerOp object
         """
 
         if self.spec.image and not image:
@@ -527,11 +538,11 @@ class BaseRuntime(ModelObj):
                         out_path=out_path, in_path=in_path)
 
     def export(self, target='', format='.yaml', secrets=None, strip=True):
-        """Save a function specification to a local or remote path (default:
-        ./function.yaml)"""
+        """Saves a function specification to a local or remote path (default:
+        ``./function.yaml``)."""
         if self.kind == 'handler':
             raise ValueError('Cannot export local handler function; use ' +
-                             'code_to_function() to serialize your function')
+                             '`code_to_function` to serialize your function')
         calc_hash(self)
         struct = self.to_dict(strip=strip)
         if format == '.yaml':

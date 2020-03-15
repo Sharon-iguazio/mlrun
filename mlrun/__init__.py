@@ -13,6 +13,7 @@
 # limitations under the License.
 
 __version__ = '0.4.6'
+# [TODO-NEW-RELEASE] Update the version number.
 
 from .run import (get_or_create_ctx, new_function, code_to_function,
                   import_function, run_pipeline, run_local)
@@ -38,3 +39,4 @@ if 'IGZ_NAMESPACE_DOMAIN' in environ:
     kfp_ep = 'https://dashboard.{}/pipelines'.format(igz_domain)
     environ['KF_PIPELINES_UI_ENDPOINT'] = kfp_ep
     mlconf.remote_host = mlconf.remote_host or igz_domain
+

@@ -121,8 +121,8 @@ config = Config(default_config)
 
 
 def _populate():
-    """Populate configuration from configuration file (if exist) and from
-    environment variables.
+    """Populates configuration information from configuration file (if exist)
+    and from environment variables.
 
     The configuration information is populated only once.
     The `_populate` method does nothing after the first call.
@@ -164,7 +164,7 @@ def _convert_str(value, typ):
 
 
 def read_env(env=None, prefix=env_prefix):
-    """Read configuration from environment variables."""
+    """Reads configuration information from environment variables."""
     env = os.environ if env is None else env
 
     config = {}

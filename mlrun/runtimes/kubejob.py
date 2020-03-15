@@ -86,7 +86,9 @@ class KubejobRuntime(KubeResource):
 
     def deploy(self, watch=True, with_mlrun=True,
                skip_deployed=False, is_kfp=False):
-        """deploy function, build container with dependencies"""
+        """Deploys a function or builds a container with dependencies."""
+        # SLSL: I'm not sure I edited correctly, specifically the "or", but it
+        # seems to match the README? NOWNOW-RND
 
         if skip_deployed and self.is_deployed:
             return 'ready'
@@ -94,13 +96,14 @@ class KubejobRuntime(KubeResource):
         build = self.spec.build
         if not build.source and not build.commands and not with_mlrun:
             if not self.spec.image:
-                raise ValueError('noting to build and image is not specified, '
-                                 'please set the function image or build args')
+                raise ValueError('Noting to build - no image is specified; '
+                                 'set the function image or build arguments')
             return 'ready'
 
         if not build.source and not build.commands and with_mlrun:
-            logger.info('running build to add mlrun package, set '
-                        'with_mlrun=False to skip if its already in the image')
+            logger.info('Running a build to add the "mlrun" package; set '
+                        '`with_mlrun=False` to skip this if the package is '
+                        'already part of the image')
 
         self.spec.build.image = self.spec.build.image \
                                 or default_image_name(self)
@@ -108,7 +111,7 @@ class KubejobRuntime(KubeResource):
 
         if self._is_remote_api() and not is_kfp:
             db = self._get_db()
-            logger.info('starting remote build, image: {}'.format(
+            logger.info('Starting a remote build; image: {}'.format(
                 self.spec.build.image))
             data = db.remote_builder(self, with_mlrun)
             self.status = data['data'].get('status', None)
@@ -131,7 +134,7 @@ class KubejobRuntime(KubeResource):
         try:
             text = db.get_builder_status(self, 0, logs=logs)
         except RunDBError:
-            raise ValueError('function or build process not found')
+            raise ValueError('Function or build process not found')
 
         if text:
             print(text.decode())
@@ -165,14 +168,16 @@ class KubejobRuntime(KubeResource):
                 if status == 'succeeded':
                     self.status.build_pod = None
                     self.status.state = 'ready'
-                    logger.info('build completed successfully')
+                    logger.info('Build completed successfully')
                     return 'ready'
                 if status in ['failed', 'error']:
                     self.status.state = status
-                    logger.error(' build {}, watch the build pod logs: {}'.format(status, pod))
+                    logger.error(' Build {}; watch the build logs for pod '
+                                 '"{}"'.format(status, pod))
                     return status
 
-                logger.info('builder status is: {}, wait for it to complete'.format(status))
+                logger.info('Build status = "{}"; wait for the build to '
+                            'complete'.format(status))
             return None
 
     def deploy_step(self, image=None, base_image=None, commands: list = None,
@@ -206,9 +211,10 @@ class KubejobRuntime(KubeResource):
             status = k8s.watch(pod_name, namespace, writer=writer)
 
             if status in ['failed', 'error']:
-                raise RunError(f'pod exited with {status}, check logs')
+                raise RunError(f'Pod exited with status "{status}"; check '
+                               'the logs')
         else:
-            txt = 'Job is running in the background, pod: {}'.format(pod_name)
+            txt = 'A background job is running on pod "{}"'.format(pod_name)
             logger.info(txt)
             runobj.status.status_text = txt
 
@@ -235,3 +241,4 @@ def func_to_pod(image, runtime, extra_env, command, args):
             client.V1LocalObjectReference(name=runtime.spec.image_pull_secret)]
 
     return pod_spec
+

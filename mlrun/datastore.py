@@ -85,12 +85,12 @@ class StoreManager:
     def __init__(self, secrets=None, db=None):
         self._stores = {}
         self._secrets = secrets or {}
-        self._db = db
+        self._db = dbrun-ml-workflow-w-kubeflow-pipelines
 
     def _get_db(self):
         if self._db:
             return self._db
-        raise ValueError('run db is not set')
+        raise ValueError('MLRun DB not set')
 
     def from_dict(self, struct: dict):
         stor_list = struct.get(run_keys.data_stores)

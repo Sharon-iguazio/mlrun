@@ -29,10 +29,14 @@ def get_or_set_dburl(default=''):
 
 
 def get_run_db(url=''):
-    """Returns the MLRun database"""
-	# SLSL: I changed it from "Retruns the runtime database". "runtime database"
-	# is used only in one other location, in an internal comment in
-	# mlrun/execution.py. NOWNOW-RND
+  """Returns an MLRun database (DB) object.
+
+  :param url:   Path or URL of the MLRun database/API service; default: ``./``
+                (the current working directory)
+  """
+  # SLSL: I changed the method description from "Returns the runtime database".
+  # "runtime database" is used only in one other location, in an internal
+  # comment in mlrun/execution.py. I also added the `url` param doc. NOWNOW-RND
     if not url:
         url = get_or_set_dburl('./')
 
@@ -46,3 +50,4 @@ def get_run_db(url=''):
         cls = SQLDB
 
     return cls(url)
+

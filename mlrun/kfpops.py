@@ -51,7 +51,7 @@ def write_kfpmeta(struct):
             val = results[key]
         try:
             logger.info(
-                'writing artifact output: /tmp/{} = {}'.format(key, val))
+                'Writing output artifact: /tmp/{} = {}'.format(key, val))
             with open('/tmp/{}'.format(key), 'w') as fp:
                 fp.write(val)
         except Exception:
@@ -117,77 +117,115 @@ def mlrun_op(name: str = '', project: str = '', function=None, func_url=None,
              selector: str = '', inputs: dict = None, outputs: list = None,
              in_path: str = '', out_path: str = '', rundb: str = '',
              mode: str = '', handler: str = '', more_args: list = None):
-    """MLRun Kubeflow Pipelines operator for forming pipeline steps
+    """An MLRun Kubeflow Pipelines operator for forming pipeline steps.
 
-    When using Kubeflow Pipelines, each step is wrapped in an mlrun_op call.
-    One step can pass state and data to the next step. See example below.
+    When using Kubeflow Pipelines, each step is wrapped in an ``mlrun_op``
+    call. One step can pass state and data to the next step. See the method
+    example.
 
-    :param name:    name used for the step
-    :param project: optional, project name
-    :param image:   optional, run container image (will be executing the step)
-                    the container should host all required packages + code
-                    for the run, alternatively user can mount packages/code via
-                    shared file volumes like v3io (see example below)
-    :param function: optional, function object
-    :param func_url: optional, function object url
-    :param command: exec command (or URL for functions)
-    :param secrets: extra secrets specs, will be injected into the runtime
-                    e.g. ['file=<filename>', 'env=ENV_KEY1,ENV_KEY2']
-    :param params:  dictionary of run parameters and values
-    :param hyperparams: dictionary of hyper parameters and list values, each
-                        hyperparam holds a list of values, the run will be
-                        executed for every parameter combination (GridSearch)
-    :param param_file:  a csv file with parameter combinations, first row hold
-                        the parameter names, following rows hold param values
-    :param selector  selection criteria for hyperparams e.g. "max.accuracy"
-    :param inputs:   dictionary of input objects + optional paths (if path is
-                     omitted the path will be the in_path/key.
-    :param outputs:  dictionary of input objects + optional paths (if path is
-                     omitted the path will be the out_path/key.
-    :param in_path:  default input path/url (prefix) for inputs
-    :param out_path: default output path/url (prefix) for artifacts
+    :param name:    Step name
+    :param project: [Optional] Project name
+    :param image:   [Optional] The name of a container image that hosts all the
+                    required packages and code for for executing the step;
+                    alternatively, you can mount the packages and code to a
+                    shared file-system volume such as the ``v3io`` data mount
+                    of an Iguazio Data Science Platform cluster (see the method
+                    example)
+    :param function: [Optional] Function object
+    :param func_url: Function-object URL
+    :param command: A run command to execute, or a URL for functions
+    :param secrets: Extra secrets specs to inject into the run context; for
+                    example ``['file=secrets.txt', 'env=ENV_KEY1,ENV_KEY2']``
+    :param params:  A dictionary of run parameters and values
+    :param hyperparams: Dictionary of run hyper parameters; each hyperparameter
+                    contains a list of values, and the run is executed for each
+                    parameter combination (grid search)
+    :param param_file: Path to a CSV run-parameters file; the first row lists
+                     the parameter names, and each subsequent row lists
+                     corresponding parameter values that represent a different
+                     parameters combination to execute
+    :param selector  Selection criteria for hyperparameters; for example,
+                     ``"max.accuracy"``
+    :param inputs:   A dictionary of input-artifact (data-objects) names and
+                     optional paths; if the path is omitted, the default
+                     input-artifacts path is used (see ``in_path``)
+    :param outputs:  A list of output-artifact (data-objects) names and
+                     optional paths; if the path is omitted, the default
+                     output-artifacts path is used (see ``out_path``)
+    :param in_path:  Default input path/URL (prefix) for inputs
+    :param out_path: default output path/URL (prefix) for artifacts
     :param rundb:    path for rundb (or use 'MLRUN_DBPATH' env instead)
     :param mode:     run mode, e.g. 'noctx' for pushing params as args
-    :param handler   code entry-point/hanfler name
-    :param job_image name of the image user for the job
+    :param handler   Code entry-point/handler name
+    :param job_image Name of the image user for the job
 
     :return: KFP step operation
 
-    Example:
-    from kfp import dsl
-    from mlrun import mlrun_op
-    from mlrun.platforms import mount_v3io
+    :example:
+    ::
 
-    def mlrun_train(p1, p2):
-    return mlrun_op('training',
-                    command = '/User/kubeflow/training.py',
-                    params = {'p1':p1, 'p2':p2},
-                    outputs = {'model.txt':'', 'dataset.csv':''},
-                    out_path ='v3io:///bigdata/mlrun/{{workflow.uid}}/',
-                    rundb = '/User/kubeflow')
+      from kfp import dsl
+      from mlrun import mlrun_op
+      from mlrun.platforms import mount_v3io
 
-    # use data from the first step
-    def mlrun_validate(modelfile):
-        return mlrun_op('validation',
-                    command = '/User/kubeflow/validation.py',
-                    inputs = {'model.txt':modelfile},
-                    out_path ='v3io:///bigdata/mlrun/{{workflow.uid}}/',
-                    rundb = '/User/kubeflow')
+      def mlrun_train(p1, p2):
+      return mlrun_op('training',
+                      command = '/User/kubeflow/training.py',
+                      params = {'p1':p1, 'p2':p2},
+                      outputs = {'model.txt':'', 'dataset.csv':''},
+                      out_path ='v3io:///bigdata/mlrun/{{workflow.uid}}/',
+                      rundb = '/User/kubeflow')
 
-    @dsl.pipeline(
-        name='My MLRUN pipeline', description='Shows how to use mlrun.'
-    )
-    def mlrun_pipeline(
-        p1 = 5 , p2 = '"text"'
-    ):
-        # run training, mount_v3io will mount "/User" into the pipeline step
-        train = mlrun_train(p1, p2).apply(mount_v3io())
+      # Use data from the first step
+      def mlrun_validate(modelfile):
+          return mlrun_op('validation',
+                      command = '/User/kubeflow/validation.py',
+                      inputs = {'model.txt':modelfile},
+                      out_path ='v3io:///bigdata/mlrun/{{workflow.uid}}/',
+                      rundb = '/User/kubeflow')
 
-        # feed 1st step results into the secound step
-        validate = mlrun_validate(
-            train.outputs['model-txt']).apply(mount_v3io())
+      @dsl.pipeline(
+          name='My MLRun pipeline', description='Shows how to use MLRun.'
+      )
+      def mlrun_pipeline(
+          p1 = 5 , p2 = '"text"'
+      ):
+          # Run training; `v3io` mounts "/User" into the pipeline step
+          train = mlrun_train(p1, p2).apply(mount_v3io())
+
+          # Feed first step results to the second step
+          validate = mlrun_validate(
+              train.outputs['model-txt']).apply(mount_v3io())
 
     """
+    # SLSL:
+    # - TODO: Verify my edits of the `inputs` and `outputs` parameters.
+    #   I'm note sure what the original reference to setting the "key" when
+    #   no path is set in the dictionary referred to ("in_path/key" /
+    #   "out_path/key")?! (Note that the `outputs` param doc also referred to
+    #   "inputs".)
+    #   I also changed the `outputs` doc to refer to a "list" and not a
+    #   "dictionary", per the function prototype and the uses in
+    #   test/test_kfp.py + the XGboost demo's `as_step` `outputs` assignments
+    #   quoted in the README. But the code-doc example above assigns a
+    #   dictionary to `outputs` -
+    #   `outputs = {'model.txt':'', 'dataset.csv':''}`?!
+    #   And on the other hand, mlrun/runtimes/base.py `as-step` defines an
+    #   `outputs` param of type `dict`, but its documented as a "list of
+    #   outputs ..." and the `as_steps` uses in the XGBoost, quoted in the
+    #   README, assign lists to the `as_step` `outputs param (e.g.,
+    #   `outputs=['iris_dataset']` while `inputs` is assigned a `{...}` dict)?!
+    #   The `outputs` doc was previously just a copy of `inputs`. `as_step`
+    #   sets the kfops `mlrun_op` method's `outputs` param to the `as_step`
+    #   `outputs` param, even though they're defined as being of different
+    #   type.
+    #   NOWNOWNOW-RND
+    # - I don't understand why we mark only some of the optional parameters.
+    #   I think this could be more confusing than helpful. Miki said Python
+    #   developers can gather the requirement from the function prototype - if
+    #   a parameter has a default value it's optional - so we only need to
+    #   document optional params when this isn't clear from the prototype.
+    #   This is relevant not only to this method or file. NOWNOWNOW-RND
     from kfp import dsl
     from os import environ
     from kubernetes import client as k8s_client
@@ -367,7 +405,7 @@ def add_env(env=None):
 
 def build_op(name, function=None, func_url=None, image=None, base_image=None, commands: list = None,
              secret_name='', with_mlrun=True, skip_deployed=False):
-    """build Docker image."""
+    """Builds a container image (a Docker image)."""
 
     from kfp import dsl
     from os import environ

@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""mlrun database HTTP server"""
+
+"""MLRUN_DB_PORT Database HTTP Server"""
+
 import ast
 import mimetypes
 import tempfile

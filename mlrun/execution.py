@@ -29,18 +29,20 @@ class MLCtxValueError(Exception):
 
 
 class MLClientCtx(object):
-    """ML Execution Client Context
+    """A client ML-execution context.
 
-    the context is generated using the get_or_create_ctx call (see its doc)
-    and provides an interface to use run params, metadata, inputs, and outputs
+    The context is generated using the ``get_or_create_ctx`` call (see its doc)
+    and provides an interface to use run parameters, metadata, inputs, and
+    outputs.
 
-    base metadata include: uid, name, project, and iteration (for hyper params)
-    users can set labels and annotations using set_labels(), set_annotation()
-    access parameters and secrets using get_param(), get_secret()
-    access input data objects using get_input()
-    store results, artifacts, and real-time metrics using log_xx methods
+    The basic run metadata includes the run UID, name, project, and iteration
+    number (for hyperparameters).
+    Users can set labels and annotations using ``set_labels`` and
+    ``set_annotation``; access parameters and secrets using ``get_param`` and
+    ``get_secret``; access input data objects using ``get_input``, and store
+    run results, artifacts, and real-time metrics using ``log_xx methods``.
 
-    see doc for the individual params and methods
+    See the documentation for the specific class properties and methods.
     """
 
     def __init__(self, autocommit=False, tmp='', log_stream=None):
@@ -51,7 +53,7 @@ class MLClientCtx(object):
         self._tag = ''
         self._secrets_manager = SecretsStore()
 
-        # runtime db service interfaces
+        # Runtime DB service interfaces
         self._rundb = None
         self._tmpfile = tmp
         self._logger = log_stream or logger
@@ -95,7 +97,7 @@ class MLClientCtx(object):
             self._data_stores, db=self._rundb, out_path=self._out_path)
 
     def get_meta(self):
-        """Reserved for internal use"""
+        """RESERVED FOR INTERNAL USE"""
         uri = f'{self._project}/{self.uid}' if self._project else self.uid
         resp = {
             'name': self.name,
@@ -135,7 +137,7 @@ class MLClientCtx(object):
         self._init_dbs(rundb)
 
         if spec:
-            # init data related objects (require DB & Secrets to be set first)
+            # Init data-related objects; require DB & secrets to be set first
             self._data_stores.from_dict(spec)
             if inputs and isinstance(inputs, dict):
                 for k, v in inputs.items():
@@ -150,100 +152,120 @@ class MLClientCtx(object):
 
     @property
     def uid(self):
-        """Unique run id"""
+        """Unique run ID."""
         if self._iteration:
             return f'{self._uid}-{self._iteration}'
         return self._uid
 
     @property
     def tag(self):
-        """run tag (uid or workflow id if exists)"""
+        """Run tag (UID or workflow ID, if exists)."""
         return self._labels.get('workflow', self._uid)
 
     @property
     def iteration(self):
-        """child iteration index, for hyper parameters """
+        """Child iteration index for hyperparameters."""
         return self._iteration
 
     @property
     def project(self):
-        """project name, runs can be categorized by projects"""
+        """Project name. Runs can be categorized by projects."""
         return self._project
 
     @property
     def logger(self):
-        """built-in logger interface"""
+        """Built-in logger interface."""
         return self._logger
 
     @property
     def log_level(self):
-        """get the logging level, e.g. 'debug', 'info', 'error'"""
+        """Log level - for example, ``'debug'``, ``'info'``, or ``'error'``."""
         return self._log_level
 
     @log_level.setter
     def log_level(self, value: str):
-        """set the logging level, e.g. 'debug', 'info', 'error'"""
+        """Sets the log level - for example, ``'debug'``, ``'info'``, or
+        ``'error'``."""
         self._log_level = value
-        print(f'changed log level to: {value}')
+        print(f'Changed the log level to "{value}"')
 
     @property
     def parameters(self):
-        """dictionary of run parameters (read-only)"""
+        """Run-parameters dictionary (read-only)."""
         return deepcopy(self._parameters)
 
     @property
     def inputs(self):
-        """Dictionary of input data items (read-only)"""
+        """Dictionary of input run artifacts (data objects) containing
+        input-name and artifact-path pairs (read-only)."""
+        # SLSL: Edited? NOWNOWNOW-RND
         return deepcopy(self._inputs)
 
     @property
     def results(self):
-        """dictionary of results (read-only)"""
+        """Run-results dictionary (read-only)."""
         return deepcopy(self._results)
 
     @property
     def artifacts(self):
-        """dictionary of artifacts (read-only)"""
+        """List of run-artifact (data-object) names (read-only)."""
+        # SLSL: Edited?
+        # I changed "dictionary" to "list" - see my related outputs
+        # param/CLI option type questions and the use of "list" below.
+        # If it's not only output artifacts (?) what other artifacts does it
+        # include? Also the input artifacts if a separate input-artifacts path
+        # isn't set?
+        # But the artifact_list() method uses `dict` ...?!
+        # Note that the description of the new `artifact_path` property that
+        # replaces `out_path` refers specifically to output artifacts?
+        # NOWNOWNOW-RND
         return deepcopy(self._artifacts_manager.artifact_list())
 
     @property
     def in_path(self):
-        """default input path for data objects"""
+        """Default path for storing input run artifacts (data objects)."""
         return self._in_path
 
     @property
     def out_path(self):
-        """default output path for artifacts"""
-        logger.info('.out_path will soon be deprecated, use .artifact_path')
+        """[DEPRECATED] Default path for storing output run artifacts (data
+        objects).
+        
+        .. note::
+          The ``out_path`` property is deprecated and will eventually be
+          removed. Use the ``artifact_path`` property instead."""
+        logger.info('`out_path` is deprecated; use `artifact_path` instead')
         return self._out_path
 
     @property
     def artifact_path(self):
-        """default output path for artifacts"""
+        """Default path for storing output run artifacts (data objects)."""
+        # SLSL: Only "output" artifacts? See also related questions. NOWNOW-RND
         return self._out_path
 
     @property
     def labels(self):
-        """dictionary with labels (read-only)"""
+        """Labels dictionary (read-only)."""
         return deepcopy(self._labels)
 
     def set_label(self, key: str, value, replace: bool = True):
-        """set/record a specific label"""
+        """Sets (records) a specific label."""
         if replace or not self._labels.get(key):
             self._labels[key] = str(value)
 
     @property
     def annotations(self):
-        """dictionary with annotations (read-only)"""
+        """Annotations dictionary (read-only)."""
         return deepcopy(self._annotations)
 
     def set_annotation(self, key: str, value, replace: bool = True):
-        """set/record a specific annotation"""
+        """Sets (records) a specific annotation."""
         if replace or not self._annotations.get(key):
             self._annotations[key] = str(value)
 
     def get_param(self, key: str, default=None):
-        """get a run parameter, or use the provided default if not set"""
+        """Gets the value of a run parameter, or uses the provided default
+        value if no value is currently set for the specified parameter."""
         if key not in self._parameters:
             self._parameters[key] = default
             if default:
@@ -252,9 +274,9 @@ class MLClientCtx(object):
         return self._parameters[key]
 
     def get_secret(self, key: str):
-        """get a key based secret e.g. DB password from the context
-        secrets can be specified when invoking a run through files, env, ..
-        """
+        """Gets a key-based secret (for example, a DB password) from the run
+        context. Secrets can be specified when invoking a run (for example,
+        through files or environment variables)."""
         if self._secrets_manager:
             return self._secrets_manager.get(key)
         return None
@@ -269,23 +291,24 @@ class MLClientCtx(object):
         return obj
 
     def get_input(self, key: str, url: str = ''):
-        """get an input data object, data objects have methods such as
-         .get(), .download(), .url, .. to access the actual data"""
+        """Gets an input run artifact (data object). Data objects have methods
+        to access the actual data, such as ``get``, ``download``, and ``url``.
+        """
         if key not in self._inputs:
             return self._set_input(key, url)
         else:
             return self._inputs[key]
 
     def log_result(self, key: str, value, commit=False):
-        """log a scalar result value"""
+        """Logs the value of a scalar result."""
         self._results[str(key)] = value
         self._update_db(commit=commit)
 
     def log_results(self, results: dict, commit=False):
-        """log a set of scalar result values"""
+        """Logs a set of scalar-result values."""
         if not isinstance(results, dict):
             raise MLCtxValueError(
-                '(multiple) results must be in the form of dict')
+                'Multiple results must be in the form of a dictionary')
 
         for p in results.keys():
             self._results[str(p)] = results[p]
@@ -293,7 +316,7 @@ class MLClientCtx(object):
 
     def log_iteration_results(
       self, best, summary: list, task: dict, commit=False):
-        """Reserved for internal use"""
+        """RESERVED FOR INTERNAL USE"""
 
         if best:
             self._results['best_iteration'] = best
@@ -310,7 +333,7 @@ class MLClientCtx(object):
             self._update_db(commit=True)
 
     def log_metric(self, key: str, value, timestamp=None, labels=None):
-        """TBD, log a real-time time-series metric"""
+        """[TBD] Log a real-time time-series metric."""
         labels = {} if labels is None else labels
         if not timestamp:
             timestamp = datetime.now()
@@ -318,7 +341,7 @@ class MLClientCtx(object):
             self._rundb.store_metric({key: value}, timestamp, labels)
 
     def log_metrics(self, keyvals: dict, timestamp=None, labels=None):
-        """TBD, log a set of real-time time-series metrics"""
+        """[TBD] Log a set of real-time time-series metrics."""
         labels = {} if labels is None else labels
         if not timestamp:
             timestamp = datetime.now()
@@ -328,7 +351,7 @@ class MLClientCtx(object):
     def log_artifact(self, item, body=None, target_path='', src_path=None,
                      tag='', viewer=None, local_path=None, artifact_path=None,
                      upload=True, labels=None, format=None, **kwargs):
-        """log an output artifact and optionally upload it"""
+        """Logs an output artifact and optionally uploads it."""
         self._artifacts_manager.log_artifact(self, item, body=body,
                                              target_path=target_path,
                                              src_path=src_path,
@@ -342,13 +365,13 @@ class MLClientCtx(object):
         self._update_db()
 
     def commit(self, message: str = ''):
-        """save run state and add a commit message"""
+        """Saves the run state and adds a commit message."""
         if message:
             self._annotations['message'] = message
         self._update_db(commit=True, message=message)
 
     def set_state(self, state: str = None, error: str = None, commit=True):
-        """modify and store the run state or mark an error"""
+        """Modifies and stores the run state or marks an error."""
         updates = {'status.last_update': now_date().isoformat()}
 
         if error:
@@ -365,7 +388,7 @@ class MLClientCtx(object):
                                    self.project, iter=self._iteration)
 
     def set_hostname(self, host: str):
-        """update the hostname"""
+        """Updates the host name."""
         self._host = host
         if self._rundb:
             updates = {'status.host': host}
@@ -373,7 +396,7 @@ class MLClientCtx(object):
                                    self.project, iter=self._iteration)
 
     def to_dict(self):
-        """convert the run context to a dictionary"""
+        """Converts the run context to a dictionary."""
 
         def set_if_valid(struct, key, val):
             if val:
@@ -413,11 +436,11 @@ class MLClientCtx(object):
         return struct
 
     def to_yaml(self):
-        """convert the run context to a yaml buffer"""
+        """Converts the run context to a YAML buffer."""
         return dict_to_yaml(self.to_dict())
 
     def to_json(self):
-        """convert the run context to a json buffer"""
+        """Converts the run context to a JSON buffer."""
         return dict_to_json(self.to_dict())
 
     def _update_db(self, commit=False, message=''):
@@ -433,3 +456,4 @@ class MLClientCtx(object):
             if self._rundb:
                 self._rundb.store_run(
                     self.to_dict(), self._uid, self.project, iter=self._iteration)
+

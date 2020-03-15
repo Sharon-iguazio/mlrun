@@ -439,16 +439,23 @@ class SQLDB(RunDBInterface):
         return [s.struct for s in self.session.query(Schedule)]
 
     def tag_objects(self, objs, project: str, name: str):
-        """Tag objects with (project, name) tag.
+        """Tags objects by adding the specified ``(project, name)`` tag.
 
-        If force==True will update tag
+        ``force==True`` forces a tag update
         """
+        # SLSL: I rephrased the `force` note, but I'm not sure what it means,
+        # as the method doesn't receive a `force` parameter?!
+        # Is it correct to refer to a `(project, name)` tag (as was already the
+        # case in the doc of all relevant methods, I just added the code
+        # formatting)? Do we add a single tag with the project and object (?)
+        # name? (This also applies to the doc of the other methods.)
+        # NOWNOW-RND
         for obj in objs:
             tag = obj.Tag(project=project, name=name, obj_id=obj.id)
             self.session.add(tag)
 
     def del_tag(self, project: str, name: str):
-        """Remove tag (project, name) from all objects"""
+        """Removes the specified ``(project, name)`` tag from all objects."""
         count = 0
         for cls in _tagged:
             for obj in self._query(cls.Tag, project=project, name=name):
@@ -457,9 +464,10 @@ class SQLDB(RunDBInterface):
         return count
 
     def find_tagged(self, project: str, name: str):
-        """Return all objects tagged with (project, name)
+        """Returns all objects tagged with the specified ``(project, name)``
+        tag.
 
-        If not tag found, will return an empty str.
+        If no matching tag is found, the method returns an empty string.
         """
         objs = []
         for cls in _tagged:
@@ -468,7 +476,7 @@ class SQLDB(RunDBInterface):
         return objs
 
     def list_tags(self, project: str):
-        """Return all tags for a project"""
+        """Returns all tags for the specified project."""
         tags = set()
         for cls in _tagged:
             for tag in self._query(cls.Tag, project=project):

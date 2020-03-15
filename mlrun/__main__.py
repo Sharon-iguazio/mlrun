@@ -54,8 +54,10 @@ def main():
               help="Parameter name and value tuples; for example,"
               "`-p x=37 -p y='text'`")
 @click.option('--inputs', '-i', multiple=True,
-              help='Input artifact; for example, '
-              '`-i infile.txt=s3://mybucket/infile.txt`')
+              help="Input artifact of the format <name>='<path>'; for example, '
+              '`-i infile.txt=s3://mybucket/infile.txt`;"
+              "                       if the path string is empty, the "
+              "default input path is used (see --in-path)")
 @click.option('--outputs', '-o', multiple=True,
               help='Output artifact (Kubeflow Pipelines run result)')
               # SLSL: Rephrased. I wanted to add an example like I did for
@@ -106,7 +108,7 @@ def main():
               help='Hyperparameters (will expand to multiple tasks); '
               'for example, `--hyperparam p2=[1,2,3]`')
 @click.option('--param-file', default='',
-              help='Path to CSV table of execution parameters/hyperparameters')
+              help='Path to a CSV run-parameters/hyperparameters file')
 @click.option('--selector', default='',
               help='How to select the best result from a list; for example, '
               'max.accuracy')
@@ -130,7 +132,7 @@ def run(url, param, inputs, outputs, in_path, out_path, secrets, uid,
         name, workflow, project, db, runtime, kfp, hyperparam, param_file,
         selector, func_url, task, handler, mode, schedule, from_env, dump,
         image, workdir, watch, run_args):
-    """Execute a task and inject parameters."""
+    """Executes a task and injects task parameters."""
 
     out_path = out_path or environ.get('MLRUN_ARTIFACT_PATH')
     config = environ.get('MLRUN_EXEC_CONFIG')
@@ -278,7 +280,7 @@ def run(url, param, inputs, outputs, in_path, out_path, secrets, uid,
               help='Skip if already deployed')
 def build(func_url, name, project, tag, image, source, base_image, command,
           secret_name, archive, silent, with_mlrun, db, runtime, kfp, skip):
-    """Build a container image from code and requirements."""
+    """Builds a container image from code and requirements."""
 
     if runtime:
         runtime = py_eval(runtime)
@@ -389,7 +391,7 @@ def build(func_url, name, project, tag, image, source, base_image, command,
 @click.option('--verbose', is_flag=True,
               help='Verbose log')
 def deploy(spec, source, dashboard, project, model, tag, kind, env, verbose):
-    """Deploy a model or function."""
+    """Deploys a model or function."""
     if spec:
         runtime = py_eval(spec)
     else:
@@ -431,7 +433,7 @@ def deploy(spec, source, dashboard, project, model, tag, kind, env, verbose):
 @click.option('--timeout', '-t', default=600, show_default=True,
               help='Timeout period, in seconds')
 def watch(pod, namespace, timeout):
-    """Read current or previous task (pod) logs."""
+    """Reads current or previous task (pod) logs."""
     k8s = K8sHelper(namespace)
     status = k8s.watch(pod, namespace, timeout)
     print('Last status of pod {} is "{}"'.format(pod, status))
@@ -461,7 +463,7 @@ def watch(pod, namespace, timeout):
 
 @click.argument('extra_args', nargs=-1, type=click.UNPROCESSED)
 def get(kind, name, selector, namespace, uid, project, tag, db, extra_args):
-    """List/get one or more objects for a specific kind (class)."""
+    """Lists/gets one or more objects for a specific kind (class)."""
 
     if kind.startswith('po'):
         k8s = K8sHelper(namespace)
@@ -533,7 +535,7 @@ def get(kind, name, selector, namespace, uid, project, tag, db, extra_args):
 @click.option('--dirpath', '-d',
               help='Path to the MLRun DB/API service directory')
 def db(port, dirpath):
-    """Run an MLRun database/HTTP API service."""
+    """Runs an MLRun database/HTTP API service."""
     env = environ.copy()
     if port is not None:
         env['MLRUN_httpdb__port'] = str(port)
@@ -551,7 +553,7 @@ def db(port, dirpath):
 # `version` Command
 @main.command()
 def version():
-    """Get the MLRun version."""
+    """Displays the MLRun version."""
 
     print('MLRun version: {}'.format(get_version()))
 
@@ -567,7 +569,7 @@ def version():
               help='Path or URL of the MLRun database/API service')
 @click.option('--watch', '-w', is_flag=True, help='watch/follow log')
 def logs(uid, project, offset, db, watch):
-    """Get or view task logs."""
+    """Gets or displays task logs."""
 
     mldb = get_run_db(db or mlconf.dbpath).connect()
     if mldb.kind == 'http':
@@ -609,7 +611,7 @@ def logs(uid, project, offset, db, watch):
               help='Allow using Git files with uncommitted changes')
 def project(context, name, url, run, arguments, artifact_path,
             namespace, db, init_git, clone, sync, dirty):
-    """Load and/or run an MLRun project."""
+    """Loads and/or runs an MLRun project."""
     if db:
         mlconf.dbpath = db
 
@@ -654,7 +656,7 @@ def project(context, name, url, run, arguments, artifact_path,
 @click.option('--running', '-r', is_flag=True,
               help='clean running pods as well')
 def clean(api, namespace, pending, running):
-    """Clean completed or failed pods/jobs."""
+    """Cleans completed or failed pods/jobs."""
     k8s = K8sHelper(namespace)
     #mldb = get_run_db(db or mlconf.dbpath).connect()
     items = k8s.list_pods(namespace)
@@ -680,7 +682,7 @@ def clean(api, namespace, pending, running):
 # `config` Command
 @main.command(name='config')
 def show_config():
-    """Show configuration and exit."""
+    """Displays an MLRun YAML configuration configuration."""
     print(mlconf.dump_yaml())
 
 
