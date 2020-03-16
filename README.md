@@ -5,33 +5,11 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![PyPI version fury.io](https://badge.fury.io/py/mlrun.svg)](https://pypi.python.org/pypi/mlrun/)
 [![Documentation](https://readthedocs.org/projects/mlrun/badge/?version=latest)](https://mlrun.readthedocs.io/en/latest/?badge=latest)
-<!-- SLSL-TODO: Split into multiple pages in a separate commit. -->
-<!-- SLSL-TODO: Check all my internal comments, make necessary edits, and
-    remove the comments before submitting a PR. -->
-<!-- SLSL: The "Documentation" tag links to readthedocs doc.
-  1. The current link leads to an empty page:
-     https://readthedocs.org/projects/mlrun/badge/?version=latest
-  2. https://readthedocs.org/projects/mlrun/ hast "latest" and "stable" links:
-      https://mlrun.readthedocs.io/en/latest/
-      https://mlrun.readthedocs.io/en/stable/
-    Both versions have links to multiple doc files.
-  3. I think we should at least remove the "Documentation" doc until we update
-    the generated documentation and ensure that all relevant contributors know
-    which source files to update to keep the docs up to date.
-  4. There's an empty docs/contents.rst file?
-  5. I think we need to have a short overview of the purpose of each package +
-     verify that the packages' order in the generated TOC makes sense.
-  6. Many of the API methods are missing documentation, especially for the "db"
-     package, which doesn't have any doc text.
--->
 
 MLRun is a generic and convenient mechanism for data scientists and software developers to describe and run tasks related to machine learning (ML) in various, scalable runtime environments and ML pipelines while automatically tracking executed code, metadata, inputs, and outputs.
 MLRun integrates with the [Nuclio](https://nuclio.io/) serverless project and with [Kubeflow Pipelines](https://github.com/kubeflow/pipelines).
 
 MLRun features a Python package (`mlrun`), a command-line interface (`mlrun`), and a graphical user interface (the MLRun dashboard).
-<!-- SLSL: I added this. Is the MLRun library/package a "client" package or
-  client & server? This affects also my addition to the docs/api.rst file for
-  the readthedocs doc generation. NOWNOW-RND -->
 
 #### In This Document
 - [General Concept and Motivation](#concepts-n-motivation)
@@ -75,10 +53,6 @@ In addition, imagine a marketplace of ML functions that includes both open-sourc
 
 > **Note:** The code is in early development stages and is provided as a reference.
 > The hope is to foster wide industry collaboration and make all the resources pluggable, so that developers can code to a single API and use various open-source projects or commercial products.
-<!-- SLSL: I don't think that for platform v2.8 we can say that MLRun is in
-  early development stages, as most our the tutorial demos in this version use
-  MLRun and I believe we plan to officially support it (and not as Tech Preview)
-  (Adi/Haviv?). NOWNOW-RND/ADI -->
 
 [Back to top](#top)
 
@@ -89,12 +63,9 @@ Run the following command from your Python development environment (such as Jupy
 ```python
 pip install mlrun
 ```
-<!-- SLSL: I edited the description. NOWNOW-RND
--->
 
 MLRun requires separate containers for the API and the dashboard (UI).
 You can also select to use the pre-baked JupyterLab image.
-<!-- SLSL: What's the "pre-baked JupyterLab image" and does it create two contains? NOWNOW-RND -->
 
 To install and run MLRun locally using Docker or Kubernetes, see the instructions in [**hack/local/README.md**](hack/local/README.md).
 
@@ -127,43 +98,6 @@ To install MLRun on an instance of the [Iguazio Data Science Platform](https://w
     ```sh
     kubectl apply -n <namespace> -f <configuration file>
     ```
-  <!-- SLSL: Q: How do they know the k8s namespace of the cluster?  NOWNOW-RND
-  -->
-
-<!-- SLSL: NOWNOWNOW-RND
-  I separated the code examples into two blocks, moved the comments
-  outside of the code, and edited them, and created enumerated steps.
-  
-  I added a requirement to add a persistent-data mount and to change the
-  "Admin" configurations if needed.
-  
-  I made related edits to the comments in the configuration files.
-  (8.3.20) Haviv told me that
-  (a) There's no need / there soon won't be a need to use the configuration
-      files on the platform?!
-  (b) We should refer to the MLRun service user, as special privileges are
-      needed that not any every running user who can use the single MLRun
-      service will have. But I think that this doesn't align with the current
-      use of $V3IO_USERNAME, which is the platform's running-user envar + I
-      don't think we can refer to the running user/owner of the MLRun service
-      because if it's a single shared tenant-wide service it doesn't have a
-      running user?!
-
-  I referred to running kubectl from a platform command-line shell, although
-  I think it's also possible to run it by connecting to the platform remotely.
- 
-  I'm not sure the instructions are specific to the platform, except for the
-  specific explanations relating to the platform info to configure?
-  
-  Also, I edited the volumeMounts comment in mlrun-all.yaml and mlrunapi.yaml
-  and I changed the indentation level for this configuration in both files to
-  make it a direct child of `containers` and not of `args` - which didn't make
-  sense, as it's assigned `[]` (`args: []`); note that in mlrun-local.yaml, the
-  volumeMounts configuration isn't commented out and it's on the same level as
-  `args`, as a direct child of `containers`.
-
-  Q: How do they know the k8s namespace of the cluster?
--->
 
 [Back to top](#top)
 
@@ -220,36 +154,17 @@ MLRun has many code examples and tutorial Jupyter notebooks with embedded docume
 
 <a id="basic-components"></a>
 ### Basic Components
-<!-- SLSL: I moved the following from "Managed and Portable Execution" to
-  a separate section.
-  I edited descriptions.
-  I'm not sure about the task/job terminology distinction?
-  NOWNOW-RND -->
 
 MLRun has the following main components, which are usually grouped into **"projects"**:
 
 - <a id="def-function"></a>**Function** &mdash; a software package with one or more methods and runtime-specific attributes (such as image, command, arguments, and environment).
     A function can run one or more runs or tasks, it can be created from templates, and it can be stored in a versioned database.
-    <!-- SLSL:
-    (a) I don't quite understand the runtime attributes part, therefore I only
-        slightly rephrased it. NOWNOWNOW-RND
-    (b) I believe the templates and versioning referred to the function
-        and not the executed tasks/runs, and I rephrased accordingly. NOWNOW-RND
-    -->
 - <a id="def-task"></a>**Task** &mdash; defines the parameters, inputs, and outputs of a logical job or task to execute.
     A task can be created from a template, and can run over different runtimes or functions.
-    <!-- SLSL: I changed "over" to "on" (especially after I saw that the Run
-      description refers to running a task "on" a function), but I'm still not
-      sure what this means, specifically with regards to running on a function?
-      NOWNOWNOW-RND -->
 - <a id="def-run"></a>**Run** &mdash; contains information about an executed task.
   The run object is created as a result of running a task on a function, and it has all the attributes of a task (such as run parameters and relevant inputs and outputs) with the addition of the execution status and results (including links to output artifacts).
-    <!-- SLSL: Verify my editing, including the reference to the
-      output-artifacts links. NOWNOWNOW-RND -->
 - <a id="def-artifact"></a>**Artifact** &mdash; versioned data artifacts (such as files, objects, data sets, and models) that are produced or consumed by functions, runs, and workflows.
 - <a id="def-workflow"></a>**Workflow** &mdash; defines a functions pipeline or a directed acyclic graph (DAG) to execute using Kubeflow Pipelines.
-  <!-- SLSL: Verify my editing, including that both "pipeline" and the DAG
-    refer to functions. NOWNOWNOW-RND -->
 
 <a id="managed-and-portable-execution"></a>
 ### Managed and Portable Execution
@@ -276,30 +191,15 @@ You can also use the same [function](#def-function) to run different tasks or pa
 
 Moving from local notebook execution to remote execution &mdash; such as running a container job, a scaled-out framework, or an automated workflow engine like Kubeflow Pipelines &mdash; is seamless: just swap the runtime function or wire functions in a graph.
 Continuous build integration and deployment (CI/CD) steps can also be configured as part of the workflow, using the `deploy_step` function method.
-<!-- SLSL: I removed "; [see this tutorial for details]()" at the end of the
-  first sentence, as it didn't link to any tutorial.
-  I also made other edits, including changing "runtime/function" to "runtime
-  function"?
-  I'm not sure what "wire functions in a graph" means?
-  "`.deploy_step()` function methods" > "`deploy_step` function method".
-  NOWNOW-RND -->
 
 Functions (function objects) can be created by using any of the following methods:
 
 - **`new_function`** &mdash; creates a function "from scratch" or from another function.
 - **`code_to_function`** &mdash; creates a function from local or remote source code or from a web notebook.
 - **`import_function`** &mdash; imports a function from a local or remote YAML function-configuration file or from a function object in the MLRun database (using a DB address of the format `db://<project>/<name>[:<tag>]`).
-<!-- SLSL: Confirm my edits, specifically for `import_function`. (The original
-  `import_function` doc was "functions are imported from a local/remote YAML
-  file or from the function DB (prefix: `db://<project>/<name>[:tag]`)".)
-  I thought of adding "[...]" at the end of the URL because of the use of the
-  "prefix" terminology in the original doc, but from the uses and embedded and
-  NB doc in the current code I don't see such paths? NOWNOW-RND -->
 
 You can use the `save` function method to save a function object in the MLRun database, or the `export` method to save a YAML function-configuration function to your preferred local or remote location.
 For function-method details and examples, see the embedded documentation/help text.
-<!-- SLSL: Why don't we include the function methods in the generated reference?
-  Is it because it's runtime-specific? (It's not a "module" ...?) NOWNOW-RND -->
 
 [Back to top](#top) / [Back to quick-start TOC](#qs-tutorial)
 
@@ -308,15 +208,9 @@ For function-method details and examples, see the embedded documentation/help te
 
 After running a job, you need to be able to track it, including viewing the run parameters, inputs, and outputs.
 To support this, MLRun introduces a concept of a runtime **"context"**: the code can be set up to get parameters and inputs from the context, as well as log run outputs, artifacts, tags, and time-series metrics in the context.
-<!-- SLSL: I replaced the terminology "ML context" with "runtime context",
-  which was already used elsewhere. NOWNOW-RND -->
 
 <a id="auto-parameterization-artifact-tracking-n-logging-example"></a>
 #### Example
-<!-- SLSL: I edited to create a single Example section and edit the texts.
-  I also edited the code comments and some line breaks (for PEP8) and prepared
-  similar updates in the code (in the mlrun/demo-xgboost repo) that will be
-  committed in a separate PR. NOWNOW-RND -->
 
 The following code example from the [**train-xgboost.ipynb**](https://github.com/mlrun/demo-xgb-project/blob/master/notebooks/train-xgboost.ipynb) notebook of the MLRun XGBoost demo (**demo-xgboost**) defines two functions:
 the `iris_generator` function loads the Iris data set and saves it to the function's context object; the `xgb_train` function uses XGBoost to train an ML model on a data set and saves the log results in the function's context:
@@ -382,24 +276,9 @@ train_run = new_function().run(handler=xgb_train).with_params(eta=0.3)
 
 Alternatively, you can replace the function with a serverless runtime to run the same code on a remote cluster, which could result in a ~10x performance boost.
 You can find examples for different runtimes &mdash; such as a Kubernetes job, Nuclio, Dask, Spark, or an MPI job &mdash; in the MLRun [**examples**](examples) directory.
-<!-- SLSL: Edited. I added "remote" before "cluster"? NOWNOW-RND -->
 
 If you run your code from the `main` function, you can get the runtime context by calling the `get_or_create_ctx` method, as demonstrated in the following code from the MLRun [**training.py**](examples/training.py) example application.
 The code also demonstrates how you can use the context object to read and write execution metadata, parameters, secrets, inputs, and outputs:
-<!-- SLSL: Edited.
-  I replaced the ref to the horovod-training/py example with a ref to the
-  training.py example, as the example is from the latter example.
-  I made some edits to the example comments and line breaks (for PEP8) and
-  prepared similar edits in the examples/training.py example, to be committed
-  as part of a separate PR.
-  NOTE: I removed the comment to add params or use default, as it wasn't
-  followed by any example; instead, I edited the prints comment also to refer
-  to accessing context parameter values (which are passed to the my_job()
-  function from the runtime context as separate parameters in addition to a
-  context parameter - see the `if __name__ == "__main__"`` portion of the
-  training.py file. And I added a line break in the code for PEP8.
-  I also added "TODO:" to the comment to run some code, and rephrased.
-  NOWNOWNOW-RND -->
 
 ```python
 from mlrun import get_or_create_ctx
@@ -456,8 +335,6 @@ Alternatively, you can invoke the application by using the `mlrun` CLI; edit the
 ```sh
 mlrun run --name train -p p2=5 -i infile.txt=s3://my-bucket/infile.txt -s file=secrets.txt training.py
 ```
-<!-- SLSL: I added also the training.py location/path info, also in other
-  places. NOWNOW-RND -->
 
 [Back to top](#top) / [Back to quick-start TOC](#qs-tutorial)
 
@@ -489,20 +366,6 @@ For example, the following code demonstrates how to use hyperparameters to run t
     task = NewTask(handler=xgb_train, out_path='/User/mlrun/data').with_hyper_params(parameters, 'max.accuracy')
     run = run_local(task)
 ```
-<!-- SLSL: I would rename `with_hyper_params` to `with_hyperparams`, as we went
-  with the "hyperparameters" spelling in the docs. NOWNOW-RND -->
-<!-- SLSL: The example uses a hardcoded local platform `/User/...` path without
-  mentioning this anywhere in the doc + it would have been better to use
-  os.path.join(). mlrun_basics.ipynb defines an artifact_path variable - 
-  `artifact_path = path.join(out, '{{run.uid}}')` - and then uses it in the
-  NewTask command (`artifact_path=artifact_path` in the NewTask function call)
-  and in the CLI equivalent (`{artifact_path}`).
-  Also, the original README CLI equivalent below didn't set the out-path flag,
-  even though it's supposedly an equivalent of the NewTask command above. => I
-  added the out-path CLI option, similar to what's done in the
-  mlrun_basics.ipynb example (except that it's done by using a variable).
-  For now, I didn't change the output path in the doc or add explanations.
-  NOWNOWNOW-RND -->
 
 This code demonstrates how to instruct MLRun to run the same task while choosing the parameters from multiple lists (grid search).
 MLRun then records all the runs, but marks only the run with minimal loss as the selected result.
@@ -519,18 +382,9 @@ The following code from the example [**mlrun_basics.ipynb**](examples/mlrun_basi
     task = NewTask(handler=xgb_train).with_param_file('params.csv', 'max.accuracy')
     run = run_local(task)
 ```
-<!-- SLSL: Is the `with_param_file()` `param_file` parameter a local path to
-  a parameters file - in this example, a params.csv file in the current
-  directory? Can the function also receive a URL for a remote params file?
-  NOWNOW-RND -->
 
 > **Note:** Parameter lists can be used in various ways.
 > For example, you can pass multiple parameter files and use multiple workers to process the files simultaneously instead of one at a time.
-<!-- SLSL: I rephrased, including to replace the "list" terminology, because I
-  think the `NewTask` `with_param_file` method accepts the path/name of a single
-  parameters file and the reference here is probably to calling this method
-  multiple times (although I still don't know how you can configure different
-  workers for each params file)? NOWNOW-RND -->
 
 [Back to top](#top) / [Back to quick-start TOC](#qs-tutorial)
 
@@ -542,10 +396,6 @@ This enables you to provide code with some package requirements and let MLRun bu
 
 To build or deploy a function, all you need is to call the function's `deploy` method, which initiates a build or deployment job.
 Deployment jobs can be incorporated in pipelines just like regular jobs (using the `deploy_step` method of the function or Kubernetes-job runtime), thus enabling full automation and CI/CD.
-<!-- SLSL: I Added the reference to the function or Kubernetes-job runtime.
-  `deploy_step` is defined as a `RemoteRuntime` method in
-  mlrun/runtimes/function.py and as a `KubjobRuntime` method in
-  mlrun/runtimes/kubejob.py. NOWNOW-RND -->
 
 A functions can be built from source code or from a function specification, web notebook, Git repo, or TAR archive.
 
@@ -642,11 +492,6 @@ You can view the results and perform operations on the database by using either 
 #### The MLRun Dashboard
 
 The MLRun dashboard is a graphical user interface (GUI) for working with MLRun and viewing run data.
-<!-- SLSL: I wasn't sure whether they can perform operations on the DB elements
-  from the UI, such as deleting runs? NOWNOW-RND -->
-
-> **Note:** The UI requires an MLRun API service; see the Kubernetes YAML files in the [**hack**](hack) directory.
-<!-- SLSL: How are the hack YAML files related to running an MLRun API service? -->
 
 <br><p align="center"><img src="mlrunui.png" width="800"/></p><br>
 
@@ -678,26 +523,6 @@ db.list_artifacts('ch', tag='*').show()
 # Delete completed runs
 db.del_runs(state='completed')
 ```
-<!-- SLSL: I edited the comments here and in examples/mlrun_db.ipynb.
-  For the connect() method, the original README comment was
-  "Connect to a local file DB" while the original example NB comment was
-  "specify the DB path (use 'http://mlrun-api:8080' for api service)".
-  I changed the NB comment to 
-    "# Connect to an MLRun database/API service
-    "# Specify the DB path (for example, './' for the current directory) or\n"
-    "# the API URL ('http://mlrun-api:8080' for the default configuration).\n",
-  In other examples, I see 'http://mlrun-api:8080' set as the API URL (e.g.,
-  using `mlconf.dbpath = 'http://mlrun-api:8080'`), but not in mlrun_db.ipynb
-  nor do I see a specific configuration file reference. I'm assuming there's a
-  default configuration file/a default embedded basic configuration; all the
-  mlrun configuration files seem to set "mlrun-api" as the name of the MLRun
-  service and 8080 as the port number, although my assumption is that this is
-  configurable (and the READMEs also refer to the option of changing the port
-  number).
-  Also, there seems to be many more "db" methods, although none of the methods
-  are currently documented - see also the generated Python doc at
-  https://mlrun.readthedocs.io/en/latest/mlrun.db.html. 
-  NOWNOW-RND -->
 
 [Back to top](#top) / [Back to quick-start TOC](#qs-tutorial)
 
@@ -769,8 +594,6 @@ You can create and run an MLRun service by using either of the following methods
 - [Using the MLRun CLI](#run-mlrun-service-cli)
 
 > **Note:** For both methods, you can optionally configure the service port and/or directory path by setting the `MLRUN_httpdb__port` and `MLRUN_httpdb__dirpath` environment variables instead of the respective run parameters or CLI options.
-<!-- SLSL: I added this and removed the reference to setting MLRUN_httpdb__port
-  in the Docker section. NOWNOWNOW-RND -->
 
 <a id="run-mlrun-service-docker"></a>
 #### Using Docker to Run an MLRun Service
@@ -779,23 +602,6 @@ Run the following command to use Docker to create and run an instance of the MLR
 ```sh
 docker run -p 8080:8080 -v <service-directory path>:/mlrun/db
 ```
-
-<!-- SLSL: NOWNOW-RND Edited including the following:
-- I added a space after `-p` (`-p8080:8080` > `-p 8080:8080`); there are also
-  examples of docker commands with a similar -p port option in
-  hack/local/README.md, all with spaces after the option name.
-- Why set the port number hardcoded to 8080:8080 when the original doc also
-  says that the port can be set in the environment variables?
-  Also "8080:8080" isn't typically a port format?
-- I changed `/path/to/db` in the command to `<service-directory path>` and
-  added the text before the command. I'm not sure, though, which this path
-  should look like. Is it a path in the Docker container/registry. Should the
-  path already exist or is it created by the command?
-- I edited the port environment-variable info and referred also to the
-  MLRUN_httpdb__dirpath variable and made this a note admon.
-- I think this is only for local execution?
-- The doc is very limited ... .
--->
 
 <a id="run-mlrun-service-cli"></a>
 #### Using the MLRun CLI to Run an MLRun Service
@@ -811,16 +617,4 @@ Options:
   -p, --port INTEGER  HTTP port for serving the API
   -d, --dirpath TEXT  Path to the MLRun service directory
 ```
-<!-- SLSL: NOWNOW
-- I edited the option descriptions above and in the CLI help text in
-  mlrun/__main__.py.
-- Should we mention here and/or in the CLI help txt (in __main__.py) the option
-  of setting the MLRUN_httpdb__port and/or MLRUN_httpdb__dirpath environment
-  variables instead of using the command options / to set the default values?
-  (The README already mentions the port envar in the Docker execution section.)
--->
-<!-- SLSL: TODO: Confirm my CLI help-text changes in __main__.py and in the
-  examples/mlrun_basics.ipynb CLI cell output with the help text.
-  `dirpath` changed from "api/db path".
-  NOWNOW -->
 
