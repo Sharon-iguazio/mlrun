@@ -23,7 +23,7 @@ To use MLRun with your local Docker registry, run the MLRun API service, dashboa
 > - Both the Jupyter and MLRun services use the path **/home/jovyan/data** within the shared directory to reference the data.
 > - Using Docker is limited to local runtimes.
 
-```
+```sh
 SHARED_DIR=/home/me/data
 LOCAL_IP=x.x.x.x
 # On Windows, use host.docker.internal for LOCAL_IP

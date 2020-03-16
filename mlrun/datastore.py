@@ -171,7 +171,7 @@ class DataStore:
 
     @staticmethod
     def uri_to_kfp(endpoint, subpath):
-        raise ValueError('data store doesnt support KFP URLs')
+        raise ValueError("Data store doesn't support KFP URLs")
 
     @staticmethod
     def uri_to_ipython(endpoint, subpath):
@@ -193,7 +193,7 @@ class DataStore:
         pass
 
     def query(self, key, query='', **kwargs):
-        raise ValueError('data store doesnt support structured queries')
+        raise ValueError("Data store doesn't support structured queries")
 
     def put(self, key, data, append=False):
         pass

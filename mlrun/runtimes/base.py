@@ -354,8 +354,8 @@ class BaseRuntime(ModelObj):
             proj = '--project {}'.format(
                 runspec.metadata.project) if runspec.metadata.project else ''
             print(
-                'To track results, use .show() or .logs() or the CLI: \n'
-                '!mlrun get run {} {} , !mlrun logs {} {}'
+                'To track results, use `.show()` or `.logs()` or this  CLI '
+                'command:\n!mlrun get run {} {} , !mlrun logs {} {}'
                 .format(uid, proj, uid, proj))
 
         if result:

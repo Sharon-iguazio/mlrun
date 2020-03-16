@@ -528,11 +528,13 @@ def get(kind, name, selector, namespace, uid, project, tag, db, extra_args):
 
 # `db` Command
 @main.command()
-@click.option('--port', '-p', help='Port to listen on', type=int)
+@click.option('--port', '-p',
+              help='HTTP port for serving the API', type=int)
 @click.option('--dirpath', '-d',
-              help='Path to the MLRun DB/API service directory')
+              help='Path to the MLRun service directory')
 def db(port, dirpath):
-    """Runs an MLRun database/HTTP API service."""
+    """Creates and runs an instance of the MLRun service, which includes a
+    run database and an HTTP web API."""
     env = environ.copy()
     if port is not None:
         env['MLRUN_httpdb__port'] = str(port)
@@ -544,7 +546,8 @@ def db(port, dirpath):
     returncode = child.wait()
     if returncode != 0:
         raise SystemExit(returncode)
-# SLSL: NOWNOW I edited the description from "Run HTTP api/database server".
+# SLSL: NOWNOW I edited the description from "Run HTTP api/database server"
+# and I edited the parameter descriptions as well. Also edited in the README.
 
 
 # `version` Command
