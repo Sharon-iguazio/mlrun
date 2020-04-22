@@ -513,7 +513,7 @@ class MlrunProject(ModelObj):
             shutil.rmtree(self.context)
 
     def save(self, filepath=None):
-        """save the project object into a file (default to project.yaml)"""
+        """Save the project object to a file (default: **project.yaml**)"""
         filepath = filepath or path.join(self.context, self.subpath,
                                          'project.yaml')
         with open(filepath, 'w') as fp:
