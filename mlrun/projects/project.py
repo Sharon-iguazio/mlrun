@@ -442,19 +442,20 @@ class MlrunProject(ModelObj):
 
     def run(self, name=None, workflow_path=None, arguments=None,
             artifact_path=None, namespace=None, sync=False, dirty=False):
-        """run a workflow using kubeflow pipelines
+        """run a workflow using Kubeflow Pipelines
 
-        :param name:      name of the workflow
+        :param name:      Name of the workflow.
         :param workflow_path:
-                          url to a workflow file, if not a project workflow
+                          URL of a workflow file, if not a project workflow.
         :param arguments:
-                          kubeflow pipelines arguments (parameters)
+                          A dictionary of Kubeflow Pipelines arguments (parameters).
         :param artifact_path:
-                          target path/url for workflow artifacts, the string
-                          '{{workflow.uid}}' will be replaced by workflow id
-        :param namespace: kubernetes namespace if other than default
-        :param sync:      force functions sync before run
-        :param dirty:     allow running the workflow when the git repo is dirty
+                          Target path/URL for workflow artifacts. The string
+                          '{{workflow.uid}}' is replaced with the workflow ID.
+        :param namespace: Kubernetes namespace if other than default.
+        :param sync:      Force functions synchronization before run.
+        :param dirty:     True to run the workflow also when the Git repo is
+                          dirty (contains uncommitted changes)..
 
         :returns: run id
         """
